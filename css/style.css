@@ -315,3 +315,13 @@ g.st-hl{outline:none!important}
 @media(max-width:820px){.bottom-row{grid-template-columns:1fr}}
 .flash-hl{box-shadow:0 0 0 2px var(--pro),var(--sh);transition:box-shadow .3s}
 .don-link{color:var(--pro);font-weight:700}
+
+/* Anh nen trang nap (chu trang bat trong Cai dat) */
+.page-bg{position:fixed;inset:0;z-index:-1;background-size:cover;background-position:center;transition:opacity .6s}
+.page-bg.hide{display:none}
+.page-bg::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(7,11,20,var(--bgdim,.6)),rgba(7,11,20,calc(var(--bgdim,.6) + .15)))}
+.page-bg.blur{filter:blur(6px);transform:scale(1.04)}
+body.has-bg{background:#070b14}
+body.has-bg .card{background:linear-gradient(180deg,rgba(17,26,46,.82),rgba(11,18,32,.86));backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
+body.has-bg .top{background:rgba(7,11,20,.7);backdrop-filter:blur(10px)}
+.bg-credit{position:fixed;right:10px;bottom:8px;font-size:10.5px;color:rgba(255,255,255,.45);z-index:1}

@@ -54,8 +54,33 @@ async function loadContact() {
     applyUI(c, cur?.board || cur?.chip || "ESP32");
     renderContact(c);
     renderPacks(c.packs);
+    applyPageBg(c.pagebg);
   } catch (e) { console.warn("contact", e); renderContact({}); }
 }
+// ---------- Anh nen trang (tu doi moi ngay nhu trang chu Google, hoac anh rieng cua chu trang) ----------
+async function applyPageBg(b) {
+  const el = $("pageBg");
+  if (!b || !b.mode || b.mode === "none") return;
+  let url = "";
+  if (b.mode === "daily") {
+    const d = new Date(), seed = `tsl${d.getFullYear()}${d.getMonth() + 1}${d.getDate()}${b.seed || ""}`;
+    const w = Math.min(1920, Math.round(screen.width * (window.devicePixelRatio || 1))), h = Math.round(w * 9 / 16);
+    url = `https://picsum.photos/seed/${seed}/${w}/${Math.max(h, Math.round(screen.height * (window.devicePixelRatio || 1) * .6))}`;
+  } else if (b.mode === "own") {
+    try { url = (await getDoc(doc(db, "config", "pagebg"))).data()?.img || ""; } catch {}
+  }
+  if (!url) return;
+  const img = new Image();
+  img.onload = () => {
+    el.style.backgroundImage = `url("${img.src}")`;
+    el.style.setProperty("--bgdim", String((b.dark ?? 60) / 100));
+    el.classList.toggle("blur", !!b.blur);
+    el.classList.remove("hide");
+    document.body.classList.add("has-bg");
+  };
+  img.src = url;
+}
+
 // ---------- QR ung ho (chu trang dang trong Cai dat) ----------
 let donate = null;
 async function loadDonate() {

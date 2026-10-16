@@ -432,6 +432,23 @@ function settings() {
         ${f("otherName", "Liên hệ khác: tên nút", "Shopee")}${f("other", "Liên hệ khác: link")}
       </div>
       <button class="btn pri" id="sSave">Lưu</button></div>
+    <div class="card" style="margin-top:12px"><h3 style="font-size:16px">Ảnh nền trang nạp</h3>
+      <p class="muted small" style="margin:4px 0 10px">"Tự đổi mỗi ngày": mỗi ngày trang tự lấy 1 ảnh phong cảnh đẹp (giống trang chủ Google), mọi khách cùng ngày thấy cùng ảnh. Ảnh miễn phí bản quyền từ Picsum/Unsplash.</p>
+      <div class="grid2">
+        <div>
+          <label class="field"><span>Kiểu nền</span><select id="gbMode"><option value="none">Không dùng ảnh (nền tối như cũ)</option><option value="daily">Ảnh tự đổi mỗi ngày</option><option value="own">Ảnh của bạn</option></select></label>
+          <label class="field" id="gbFileRow"><span>Ảnh của bạn (trang tự thu nhỏ)</span><input type="file" id="gbFile" accept="image/*"></label>
+          <label class="field"><span>Độ tối phủ lên ảnh (để chữ dễ đọc): <b id="gbDarkV">60%</b></span><input type="range" id="gbDark" min="20" max="90" value="60"></label>
+          <label class="small" style="display:flex;gap:8px;align-items:center;cursor:pointer;margin:6px 0"><input type="checkbox" id="gbBlur"> Làm mờ ảnh nền</label>
+          <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn pri" id="gbSave">Lưu ảnh nền</button><button class="btn" id="gbNext" title="Đổi sang ảnh khác cho hôm nay">🎲 Đổi ảnh khác</button></div>
+          <div class="tiny" id="gbMsg" style="margin-top:6px"></div>
+        </div>
+        <div><div class="small muted" style="margin-bottom:6px">Xem trước</div>
+          <div id="gbPv" style="aspect-ratio:16/9;border-radius:12px;border:1px solid var(--line2);background:#070b14 center/cover;position:relative;overflow:hidden">
+            <div id="gbPvDim" style="position:absolute;inset:0;background:rgba(7,11,20,.6)"></div>
+            <div style="position:absolute;inset:auto 12px 12px 12px;padding:10px;border-radius:10px;background:rgba(17,26,46,.82);font-size:12px">Khung chữ mẫu trên trang nạp</div>
+          </div></div>
+      </div></div>
     <div class="card" style="margin-top:12px"><h3 style="font-size:16px">QR ủng hộ (donate)</h3>
       <p class="muted small" style="margin:4px 0 10px">Chọn ảnh QR ngân hàng (chụp màn hình từ app ngân hàng cũng được). Hiện ở cuối trang nạp (cạnh Liên hệ). Sau khi nạp thành công chỉ hiện 1 dòng cảm ơn kèm link tới mã QR.</p>
       <div class="grid2">
@@ -513,6 +530,49 @@ function settings() {
     const d = {}; ["zalo", "zaloName", "facebook", "facebookName", "tiktok", "otherName", "other"].forEach((k) => d[k] = $("s_" + k).value.trim());
     await setDoc(doc(db, "config", "site"), d, { merge: true }); Object.assign(D.config, d); toast("Đã lưu liên hệ");
   };
+  // ----- Anh nen trang nap -----
+  const gb = Object.assign({ mode: "none", dark: 60, blur: false, seed: 0 }, D.config.pagebg || {});
+  let gbImg = null;
+  const gbUrl = async () => {
+    if (gb.mode === "daily") { const d = new Date(); return `https://picsum.photos/seed/tsl${d.getFullYear()}${d.getMonth() + 1}${d.getDate()}${gb.seed || ""}/800/450`; }
+    if (gb.mode === "own") { if (gbImg) return gbImg; try { return (await getDoc(doc(db, "config", "pagebg"))).data()?.img || ""; } catch { return ""; } }
+    return "";
+  };
+  const gbDraw = async () => {
+    $("gbMode").value = gb.mode; $("gbDark").value = gb.dark; $("gbDarkV").textContent = gb.dark + "%"; $("gbBlur").checked = !!gb.blur;
+    $("gbFileRow").style.display = gb.mode === "own" ? "" : "none";
+    $("gbNext").style.display = gb.mode === "daily" ? "" : "none";
+    const u = await gbUrl();
+    $("gbPv").style.backgroundImage = u ? `url("${u}")` : "none";
+    $("gbPv").style.filter = "";
+    $("gbPvDim").style.background = `rgba(7,11,20,${gb.dark / 100})`;
+    $("gbPvDim").style.backdropFilter = gb.blur ? "blur(3px)" : "";
+  };
+  $("gbMode").onchange = () => { gb.mode = $("gbMode").value; gbDraw(); };
+  $("gbDark").oninput = () => { gb.dark = +$("gbDark").value; $("gbDarkV").textContent = gb.dark + "%"; $("gbPvDim").style.background = `rgba(7,11,20,${gb.dark / 100})`; };
+  $("gbBlur").onchange = () => { gb.blur = $("gbBlur").checked; gbDraw(); };
+  $("gbNext").onclick = () => { gb.seed = (gb.seed || 0) + 1; gbDraw(); $("gbMsg").textContent = "Bấm Lưu để dùng ảnh này"; };
+  $("gbFile").onchange = async () => {
+    const f = $("gbFile").files[0]; if (!f) return;
+    const im = await createImageBitmap(f), k = Math.min(1, 1600 / Math.max(im.width, im.height));
+    const c = document.createElement("canvas"); c.width = Math.round(im.width * k); c.height = Math.round(im.height * k);
+    c.getContext("2d").drawImage(im, 0, 0, c.width, c.height);
+    let q = 0.82; gbImg = c.toDataURL("image/jpeg", q);
+    while (gbImg.length > 900000 && q > 0.4) { q -= 0.1; gbImg = c.toDataURL("image/jpeg", q); }
+    gbDraw(); $("gbMsg").textContent = "Bấm Lưu để đăng ảnh";
+  };
+  $("gbSave").onclick = async () => {
+    try {
+      if (gb.mode === "own") {
+        if (gbImg) await setDoc(doc(db, "config", "pagebg"), { img: gbImg, updatedAt: serverTimestamp() });
+        else if (!(await gbUrl())) return toast("Chọn ảnh trước");
+      }
+      const pagebg = { mode: gb.mode, dark: gb.dark, blur: !!gb.blur, seed: gb.seed || 0 };
+      await setDoc(doc(db, "config", "site"), { pagebg }, { merge: true }); D.config.pagebg = pagebg; gbImg = null;
+      $("gbMsg").textContent = "Đã lưu, mở trang nạp (Ctrl+F5) để xem"; toast("Đã lưu ảnh nền");
+    } catch (e) { toast("Lỗi lưu: " + e.message); }
+  };
+  gbDraw();
   // ----- QR ung ho -----
   let donImg = "";
   getDoc(doc(db, "config", "donate")).then((d) => {
