@@ -7,7 +7,7 @@
 <meta name="description" content="Nạp firmware cho mạch ESP32 ngay trên trình duyệt, không cần cài phần mềm.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=15">
+<link rel="stylesheet" href="css/style.css?v=16">
 </head>
 <body>
 <header class="top"><div class="wrap">
@@ -118,17 +118,19 @@
   </section>
 
 
-  <section class="card donate hide" id="donSec" style="margin-top:28px">
+  <div class="bottom-row">
+  <section class="card donate hide" id="donSec">
     <img id="donImg" alt="Mã QR ủng hộ">
     <div><h2 style="font-size:20px" id="donT">☕ Ủng hộ mình</h2>
       <p class="muted small" id="donP" style="margin:6px 0 0;white-space:pre-line"></p></div>
   </section>
 
-  <section class="card" style="margin-top:28px;text-align:center">
+  <section class="card contact-card">
     <h2 style="font-size:20px" id="uiContT">Liên hệ</h2>
     <p class="muted small" style="margin:6px 0 0" id="uiContP">Hỏi cách lắp mạch, góp ý hoặc báo lỗi</p>
     <div class="contact" data-contact data-big style="justify-content:center;margin-top:14px"></div>
   </section>
+  </div>
 </main>
 
 <footer><div class="wrap" id="uiFoot">
@@ -137,6 +139,6 @@
 </div></footer>
 
 <script src="https://cdn.jsdelivr.net/npm/spark-md5@3.0.2/spark-md5.min.js"></script>
-<script type="module" src="js/flasher.js?v=15"></script>
+<script type="module" src="js/flasher.js?v=16"></script>
 </body>
 </html>
