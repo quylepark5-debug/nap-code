@@ -61,7 +61,7 @@ document.querySelectorAll("#nav button").forEach((b) => b.onclick = () => show(b
 function show(p) {
   document.querySelectorAll("#nav button").forEach((b) => b.classList.toggle("on", b.dataset.p === p));
   document.querySelectorAll("[data-panel]").forEach((e) => e.classList.toggle("hide", e.dataset.panel !== p));
-  ({ dash, visits, flashes, boards, codes, projects, settings })[p]();
+  ({ dash, visits, flashes, boards, codes, projects, settings, look: settings, sell: settings, device: settings })[p]();
 }
 
 async function loadAll() {
@@ -526,6 +526,22 @@ function settings() {
           <canvas id="bPv" width="320" height="240" style="width:100%;max-width:320px;border-radius:10px;border:1px solid var(--line2);background:#000;display:block"></canvas>
         </div>
       </div></div>`;
+  // Chia cac the vao tung muc menu cho de tim
+  const SEC = [
+    ["look", "🎨 Giao diện trang nạp", ["Giao diện trang nạp", "Ảnh nền trang nạp"]],
+    ["sell", "💰 Bán hàng & ủng hộ", ["Gói mã Pro", "Giới hạn nạp", "QR ủng hộ"]],
+    ["device", "📺 Đồng bộ xuống máy khách", ["Logo khởi động", "Ảnh nền đồng hồ"]],
+  ];
+  const cards = [...P("settings").querySelectorAll(":scope > .card")];
+  for (const [id, title, keys] of SEC) {
+    const box = P(id);
+    box.innerHTML = `<div class="toolbar"><h2>${title}</h2></div>`;
+    keys.forEach((k) => {
+      const c = cards.find((x) => (x.querySelector("h3")?.textContent || "").startsWith(k));
+      if (c) { c.style.marginTop = box.children.length > 1 ? "12px" : "0"; box.appendChild(c); }
+    });
+  }
+  P("settings").querySelector(".toolbar h2").textContent = "⚙️ Cài đặt chung";
   $("sSave").onclick = async () => {
     const d = {}; ["zalo", "zaloName", "facebook", "facebookName", "tiktok", "otherName", "other"].forEach((k) => d[k] = $("s_" + k).value.trim());
     await setDoc(doc(db, "config", "site"), d, { merge: true }); Object.assign(D.config, d); toast("Đã lưu liên hệ");
