@@ -75,7 +75,7 @@ const donateMini = () => donate && donate.on && donate.img && donate.afterFlash 
 // ---------- Gioi han nap ban thuong (chu trang chinh trong trang quan ly) ----------
 async function loadLimit() {
   try { limitCfg = (await getDoc(doc(db, "config", "limit"))).data() || null; } catch { limitCfg = null; }
-  if (tier() === "free") showQuota();
+  if (limited(tier())) showQuota();
 }
 const limOn = () => !!(limitCfg && limitCfg.on && limitCfg.n > 0 && limitCfg.mins > 0);
 const hrs = (m) => m % 60 ? m + " phút" : (m / 60) + " giờ";
@@ -97,24 +97,24 @@ async function consumeQuota(qs) {
 async function showQuota() {
   const box = $("quotaBox");
   clearInterval(cdTimer);
-  if (tier() !== "free" || !limOn() || busy) { box.classList.add("hide"); return; }
+  if (!limited(tier()) || !limOn() || busy) { box.classList.add("hide"); return; }
   const qs = await quotaState();
-  if (tier() !== "free") return;
+  if (!limited(tier())) return;
   const L = limitCfg;
   if (qs.ok || credit) {
     box.className = "quota tiny";
-    box.innerHTML = credit ? "" : `Bản thường: còn <b>${qs.left}/${L.n}</b> lượt nạp trong ${hrs(L.mins)}.`;
+    box.innerHTML = credit ? "" : `${tier() === "pro" ? "Pro miễn phí" : "Bản thường"}: còn <b>${qs.left}/${L.n}</b> lượt nạp trong ${hrs(L.mins)}.`;
     $("go").disabled = false;
     return;
   }
-  const pro = proOn(cur);
+  const pro = proOn(cur) && !proFree(cur) && tier() === "free";
   box.className = "quota note warn";
   const tick = () => {
     const ms = qs.resetAt - Date.now();
     if (ms <= 0) { clearInterval(cdTimer); showQuota(); return; }
     const t = Math.ceil(ms / 1000), h = Math.floor(t / 3600), m = Math.floor(t % 3600 / 60), sec = t % 60;
     const clk = (h ? h + ":" + String(m).padStart(2, "0") : m) + ":" + String(sec).padStart(2, "0");
-    box.innerHTML = `⏳ Bạn đã dùng hết <b>${L.n}/${L.n}</b> lượt nạp bản thường trong ${hrs(L.mins)}.
+    box.innerHTML = `⏳ Bạn đã dùng hết <b>${L.n}/${L.n}</b> lượt nạp ${tier() === "pro" ? "miễn phí" : "bản thường"} trong ${hrs(L.mins)}.
       <div class="cd">${clk}</div><div>Hết giờ đếm ngược là nạp tiếp được.</div>
       <div class="upsell">${pro ? `💎 Cần nạp nhiều mạch hoặc dùng thêm tính năng? <b>Bản Pro</b> không giới hạn lượt theo giờ, có tiếng Việt, đồng hồ + thời tiết, ảnh nền… <a href="#" id="toPro">Xem bản Pro</a>` : "💬 Cần nạp nhiều mạch cùng lúc? Liên hệ mình ở cuối trang nhé."}</div>`;
     const tp = $("toPro"); if (tp) tp.onclick = (e) => { e.preventDefault(); setTier("pro"); $("code").focus(); };
@@ -179,6 +179,7 @@ async function loadProjects() {
 const freeOn = (p) => p.freeOn !== false && !!p.free?.parts?.length;   // chu trang bat/tat tung ban trong trang quan ly
 const proOn = (p) => p.proOn !== false && !!p.pro?.parts?.length;
 const proFree = (p) => p?.proFree === true;                             // chu trang tat ma: ai cung nap duoc ban Pro
+const limited = (t) => t === "free" || (t === "pro" && proFree(cur));   // ban bi gioi han luot nap theo gio (dung chung 1 bo dem)
 let hasOpts = false, chipInfo = null, savedPort = null, goText = "";
 
 function pick(id, scroll) {
@@ -394,7 +395,7 @@ $("go").onclick = async () => {
   try { cfgBlob = useOpt ? buildConfig($("optForm"), t) : null; } catch (e) { $("optMsg").textContent = e.message; $("optMsg").classList.remove("hide"); return; }
 
   let qs = { ok: true };
-  if (t === "free" && limOn() && !credit) {
+  if (limited(t) && limOn() && !credit) {
     qs = await quotaState();
     if (!qs.ok) { showQuota(); return; }
   }
@@ -438,9 +439,9 @@ $("go").onclick = async () => {
       log(`Đã dùng mã: ${codeInfo.uses}/${max} lần`);
     }
 
-    if (t === "free" && limOn() && !credit) {
+    if (limited(t) && limOn() && !credit) {
       rec.stage = "lượt nạp";
-      try { await consumeQuota(qs); } catch (e) { throw new Fail("Đã hết lượt nạp bản thường trong khung giờ này. Đợi hết đếm ngược rồi nạp tiếp.", "lượt nạp"); }
+      try { await consumeQuota(qs); } catch (e) { throw new Fail("Đã hết lượt nạp miễn phí trong khung giờ này. Đợi hết đếm ngược rồi nạp tiếp.", "lượt nạp"); }
       credit = true;
     }
 

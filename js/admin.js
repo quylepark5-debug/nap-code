@@ -456,7 +456,7 @@ function settings() {
         <button class="btn ghost" id="pkSample">Điền mẫu gợi ý</button>
       </div></div>
     <div class="card" style="margin-top:12px"><h3 style="font-size:16px">Giới hạn nạp bản thường</h3>
-      <p class="muted small" style="margin:4px 0 10px">Mỗi máy (trình duyệt) của khách chỉ nạp được số lần này trong khung giờ. Hết lượt, trang hiện đồng hồ đếm ngược và gợi ý bản Pro. Bản Pro không bị giới hạn. Nạp lỗi bấm "Thử lại" không bị trừ thêm.</p>
+      <p class="muted small" style="margin:4px 0 10px">Mỗi máy (trình duyệt) của khách chỉ nạp được số lần này trong khung giờ. Hết lượt, trang hiện đồng hồ đếm ngược và gợi ý bản Pro. Áp dụng cho bản thường và bản Pro đang mở miễn phí (dùng chung 1 bộ đếm). Pro có mã thì không bị giới hạn. Nạp lỗi bấm "Thử lại" không bị trừ thêm.</p>
       <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:end">
         <label class="small" style="display:flex;gap:8px;align-items:center;cursor:pointer;margin-bottom:10px"><input type="checkbox" id="lOn"> Bật giới hạn</label>
         <label class="field" style="width:120px"><span>Số lần nạp</span><input type="number" id="lN" min="1" max="100" value="5"></label>
