@@ -184,7 +184,7 @@ async function feedback() {
   $("fbList").innerHTML = list.length ? list.map((f) => `<div class="card" style="margin-bottom:10px;padding:14px">
       <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><b style="flex:1">${star(f.stars)} ${f.project ? `<span class="pill">${esc(f.project)}</span>` : ""}</b>
         <span class="tiny">${fmtTime(f.at)}</span><button class="btn sm danger" data-fdel="${esc(f.id)}">Xoá</button></div>
-      <div style="white-space:pre-wrap;margin:8px 0;font-size:15px">${esc(f.msg)}</div>
+      <div style="white-space:pre-wrap;margin:8px 0;font-size:15px">${f.msg ? esc(f.msg) : '<span class="muted">(chỉ chấm sao)</span>'}</div>
       <div class="tiny">${f.contact ? "📇 " + esc(f.contact) + " · " : ""}${esc(f.device || "")}</div></div>`).join("")
     : '<div class="card muted">Chưa có góp ý nào.</div>';
   $("fbList").querySelectorAll("[data-fdel]").forEach((b) => b.onclick = async () => {
@@ -220,7 +220,20 @@ function shareText(c) {
 }
 function codes() {
   const opts = D.projects.map((p) => `<option value="${esc(p.id)}">${esc(p.name)}</option>`).join("");
+  // Thong ke ma: con lai / da dung / moi ma da nap bao nhieu lan
+  const cs = D.codes, used = (c) => c.uses || 0, mx = (c) => c.maxUses || MAX_USES;
+  const live = cs.filter((c) => c.active && used(c) < mx(c)), done = cs.filter((c) => c.active && used(c) >= mx(c));
+  const locked = cs.filter((c) => !c.active), fresh = live.filter((c) => !used(c));
+  const slotsLeft = live.reduce((a, c) => a + mx(c) - used(c), 0), slotsUsed = cs.reduce((a, c) => a + used(c), 0);
+  const flashN = {}; D.flashes.forEach((f) => { if (f.code && f.ok) flashN[f.code] = (flashN[f.code] || 0) + 1; });
+  const kpi = (l, v, d = "") => `<div class="card kpi"><div class="l">${l}</div><div class="v">${v}</div><div class="d">${d}</div></div>`;
   P("codes").innerHTML = `<div class="toolbar"><h2>Mã Pro</h2>${refreshBtn()}</div>
+    <div class="kpis" style="margin-bottom:12px">
+      ${kpi("Tổng số mã", cs.length, `${fresh.length} mã chưa dùng lần nào`)}
+      ${kpi("Mã còn dùng được", live.length, `còn nạp được ${slotsLeft} mạch nữa`)}
+      ${kpi("Mã đã hết lượt", done.length, locked.length ? `${locked.length} mã đã khoá` : "")}
+      ${kpi("Mạch đã nạp bằng mã", slotsUsed, `${Object.values(flashN).reduce((a, b) => a + b, 0)} lần nạp Pro thành công`)}
+    </div>
     <div class="card"><h3 style="font-size:16px">Tạo mã mới</h3>
       <div class="grid2">
         <label class="field"><span>Dự án</span><select id="cProj">${opts}<option value="*">Tất cả dự án</option></select></label>
@@ -232,17 +245,17 @@ function codes() {
       <button class="btn pri" id="cMake">＋ Tạo mã</button>
       <div id="cNew"></div>
     </div>
-    <div class="card tscroll" style="margin-top:12px"><table class="tbl"><tr><th>Mã</th><th>Dự án</th><th>Ghi chú</th><th>Đã dùng</th><th>Mạch đã nạp</th><th>Lần cuối</th><th>Trạng thái</th><th></th></tr>
+    <div class="card tscroll" style="margin-top:12px"><table class="tbl"><tr><th>Mã</th><th>Dự án</th><th>Ghi chú</th><th>Mạch đã dùng</th><th>Lần nạp</th><th>Mạch đã nạp</th><th>Lần cuối</th><th>Trạng thái</th><th></th></tr>
     ${D.codes.map((c) => {
       const max = c.maxUses || MAX_USES, u = c.uses || 0;
       const st = !c.active ? '<span class="pill bad">Đã khoá</span>' : u >= max ? '<span class="pill warn">Hết lượt</span>' : '<span class="pill ok">Còn lượt</span>';
       return `<tr><td class="mono">${esc(c.id)}</td><td>${esc(pName(c.project))}</td><td class="small">${esc(c.note)}</td>
-        <td><b>${u}</b>/${max}</td><td class="mono tiny">${esc((c.macs || []).join(" "))}</td><td>${fmtTime(c.usedAt)}</td><td>${st}</td>
+        <td><b>${u}</b>/${max} <span class="tiny">(còn ${Math.max(0, max - u)})</span></td><td title="Số lần nạp Pro thành công bằng mã này, kể cả nạp lại cùng mạch">${flashN[c.id] || 0}</td><td class="mono tiny">${esc((c.macs || []).join(" "))}</td><td>${fmtTime(c.usedAt)}</td><td>${st}</td>
         <td style="white-space:nowrap"><button class="btn sm" data-copy="${esc(c.id)}" title="Chép tin nhắn gửi khách">📋</button>
           <button class="btn sm" data-add="${esc(c.id)}" title="Thêm 5 mạch">+5</button>
           <button class="btn sm" data-lock="${esc(c.id)}">${c.active ? "Khoá" : "Mở"}</button>
           <button class="btn sm danger" data-del="${esc(c.id)}">Xoá</button></td></tr>`;
-    }).join("") || '<tr><td colspan="8" class="tiny">Chưa có mã</td></tr>'}</table></div>`;
+    }).join("") || '<tr><td colspan="9" class="tiny">Chưa có mã</td></tr>'}</table></div>`;
 
   if ($("cPack")) $("cPack").onchange = () => {
     const x = D.config.packs[$("cPack").value]; if (!x) return;

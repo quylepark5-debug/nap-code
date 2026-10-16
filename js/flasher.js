@@ -546,7 +546,7 @@ document.querySelectorAll("#fbStars button").forEach((b) => b.onclick = () => {
 });
 $("fbSend").onclick = async () => {
   const msg = $("fbMsg").value.trim(), out = $("fbMsgOut");
-  if (!msg) { out.textContent = "Bạn viết vài chữ nhé."; return; }
+  if (!msg && !fbStars) { out.textContent = "Chấm sao hoặc viết vài chữ nhé."; return; }
   let last = 0; try { last = +localStorage.getItem("fb_last") || 0; } catch {}
   if (Date.now() - last < 60000) { out.textContent = "Bạn vừa gửi rồi, đợi 1 phút rồi gửi tiếp nhé."; return; }
   if (!uid) { out.textContent = "Chưa kết nối được, thử tải lại trang."; return; }
