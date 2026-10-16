@@ -480,6 +480,14 @@ $("go").onclick = async () => {
       credit = true;
     }
 
+    if (t === "pro" && rec.mac) {                    // giay phep Pro cho dung mach nay (may kiem tra, chep firmware sang mach khac se bi khoa)
+      try {
+        await setDoc(doc(db, "lic", rec.mac.replace(/:/g, "").toLowerCase()),
+          { code: codeInfo?.code || "", project: cur.id, m: rec.mac, at: serverTimestamp() });
+        log("Đã ghi bản quyền Pro cho mạch này");
+      } catch (e) { log("Cảnh báo: chưa ghi được bản quyền Pro (" + (e.code || e.message) + ")"); }
+    }
+
     rec.stage = "tải";
     const files = attachConfig(await download(t, (p) => prog(0.03 + p * 0.12, "Đang tải firmware…")), cfgBlob);
     if (cfgBlob) log("Ghi kèm cấu hình tùy chỉnh của bạn");

@@ -476,7 +476,7 @@ function settings() {
           <label class="field" id="gbFileRow"><span>Ảnh của bạn (trang tự thu nhỏ)</span><input type="file" id="gbFile" accept="image/*"></label>
           <label class="field"><span>Độ tối phủ lên ảnh (để chữ dễ đọc): <b id="gbDarkV">60%</b></span><input type="range" id="gbDark" min="20" max="90" value="60"></label>
           <label class="small" style="display:flex;gap:8px;align-items:center;cursor:pointer;margin:6px 0"><input type="checkbox" id="gbBlur"> Làm mờ ảnh nền</label>
-          <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn pri" id="gbSave">Lưu ảnh nền</button><button class="btn" id="gbNext" title="Đổi sang ảnh khác cho hôm nay">🎲 Đổi ảnh khác</button></div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn pri" id="gbSave">Lưu ảnh nền</button><button class="btn" id="gbNext" title="Đổi sang ảnh khác cho hôm nay">🎲 Đổi ảnh khác</button><button class="btn" id="gbKeep" title="Giữ ảnh đang xem làm ảnh nền cố định">📌 Giữ ảnh này</button></div>
           <div class="tiny" id="gbMsg" style="margin-top:6px"></div>
         </div>
         <div><div class="small muted" style="margin-bottom:6px">Xem trước</div>
@@ -599,7 +599,7 @@ function settings() {
   const gbDraw = async () => {
     $("gbMode").value = gb.mode; $("gbDark").value = gb.dark; $("gbDarkV").textContent = gb.dark + "%"; $("gbBlur").checked = !!gb.blur;
     $("gbFileRow").style.display = gb.mode === "own" ? "" : "none";
-    $("gbNext").style.display = gb.mode === "daily" ? "" : "none";
+    $("gbNext").style.display = $("gbKeep").style.display = gb.mode === "daily" ? "" : "none";
     const u = await gbUrl();
     $("gbPv").style.backgroundImage = u ? `url("${u}")` : "none";
     $("gbPv").style.filter = "";
@@ -610,6 +610,21 @@ function settings() {
   $("gbDark").oninput = () => { gb.dark = +$("gbDark").value; $("gbDarkV").textContent = gb.dark + "%"; $("gbPvDim").style.background = `rgba(7,11,20,${gb.dark / 100})`; };
   $("gbBlur").onchange = () => { gb.blur = $("gbBlur").checked; gbDraw(); };
   $("gbNext").onclick = () => { gb.seed = (gb.seed || 0) + 1; gbDraw(); $("gbMsg").textContent = "Bấm Lưu để dùng ảnh này"; };
+  // Thay anh tu dong hom nay dep -> giu lai lam "Anh cua ban" (khong bi mat khi doi che do)
+  $("gbKeep").onclick = async () => {
+    $("gbKeep").disabled = true; $("gbMsg").textContent = "Đang lấy ảnh…";
+    try {
+      const d = new Date(), seed = `tsl${d.getFullYear()}${d.getMonth() + 1}${d.getDate()}${gb.seed || ""}`;
+      const blob = await (await fetch(`https://picsum.photos/seed/${seed}/1920/1080`)).blob();
+      const im = await createImageBitmap(blob), c = document.createElement("canvas"); c.width = im.width; c.height = im.height;
+      c.getContext("2d").drawImage(im, 0, 0);
+      let q = 0.85; gbImg = c.toDataURL("image/jpeg", q);
+      while (gbImg.length > 900000 && q > 0.4) { q -= 0.1; gbImg = c.toDataURL("image/jpeg", q); }
+      gb.mode = "own"; await gbDraw();
+      $("gbSave").click();
+    } catch (e) { $("gbMsg").textContent = "Không lấy được ảnh: " + e.message; }
+    $("gbKeep").disabled = false;
+  };
   $("gbFile").onchange = async () => {
     const f = $("gbFile").files[0]; if (!f) return;
     const im = await createImageBitmap(f), k = Math.min(1, 1600 / Math.max(im.width, im.height));
