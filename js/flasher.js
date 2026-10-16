@@ -32,6 +32,7 @@ if (!("serial" in navigator)) $("noSerial").classList.remove("hide");
   logVisit();
   loadContact();
   loadLimit();
+  loadDonate();
   await loadProjects();
 })();
 
@@ -55,6 +56,21 @@ async function loadContact() {
     renderPacks(c.packs);
   } catch (e) { console.warn("contact", e); renderContact({}); }
 }
+// ---------- QR ung ho (chu trang dang trong Cai dat) ----------
+let donate = null;
+async function loadDonate() {
+  try { donate = (await getDoc(doc(db, "config", "donate"))).data() || null; } catch { donate = null; }
+  const on = !!(donate && donate.on && donate.img);
+  $("donSec").classList.toggle("hide", !on);
+  if (!on) return;
+  $("donImg").src = donate.img;
+  $("donT").textContent = donate.title || "☕ Ủng hộ mình";
+  $("donP").textContent = donate.text || "Nếu thấy dự án hữu ích, bạn có thể ủng hộ mình một ly cà phê để có thêm động lực làm dự án mới. Cảm ơn bạn!";
+  $("donImg").onclick = () => $("donImg").classList.toggle("big");
+}
+const donateMini = () => donate && donate.on && donate.img && donate.afterFlash !== false
+  ? `<div class="don-mini"><img src="${donate.img}" alt="QR"><div class="small muted">${esc(donate.thanks || "Thấy hữu ích thì ủng hộ mình 1 ly cà phê nhé ☕")}</div></div>` : "";
+
 // ---------- Gioi han nap ban thuong (chu trang chinh trong trang quan ly) ----------
 async function loadLimit() {
   try { limitCfg = (await getDoc(doc(db, "config", "limit"))).data() || null; } catch { limitCfg = null; }
@@ -448,7 +464,7 @@ $("go").onclick = async () => {
     $("done").innerHTML = `<div class="ic">🎉</div><h3>Nạp thành công!</h3>
       <p class="muted small">Mạch đang khởi động lại. Nếu màn hình chưa sáng, nhấn nút <b>RST</b> một lần.</p>
       ${t === "pro" ? `<p class="pill pro">Mã Pro còn ${Math.max(0, (codeInfo.maxUses || MAX_USES) - codeInfo.uses)}/${codeInfo.maxUses || MAX_USES} lần nạp</p><br><br>` : ""}
-      <button class="btn pri" id="again">🔁 Nạp mạch khác</button>`;
+      <button class="btn pri" id="again">🔁 Nạp mạch khác</button>${t === "free" ? donateMini() : ""}`;
     $("done").classList.remove("hide");
     credit = false;
     $("again").onclick = nextBoard;

@@ -431,6 +431,21 @@ function settings() {
         ${f("otherName", "Liên hệ khác: tên nút", "Shopee")}${f("other", "Liên hệ khác: link")}
       </div>
       <button class="btn pri" id="sSave">Lưu</button></div>
+    <div class="card" style="margin-top:12px"><h3 style="font-size:16px">QR ủng hộ (donate)</h3>
+      <p class="muted small" style="margin:4px 0 10px">Chọn ảnh QR ngân hàng (chụp màn hình từ app ngân hàng cũng được). Hiện ở cuối trang nạp, và nhỏ dưới thông báo "Nạp thành công" của bản thường.</p>
+      <div class="grid2">
+        <div>
+          <label class="small" style="display:flex;gap:8px;align-items:center;cursor:pointer;margin-bottom:8px"><input type="checkbox" id="dOn"> Hiện QR trên trang nạp</label>
+          <label class="field"><span>Ảnh QR</span><input type="file" id="dImg" accept="image/*"></label>
+          <label class="field"><span>Tiêu đề</span><input type="text" id="dT" maxlength="60" placeholder="☕ Ủng hộ mình"></label>
+          <label class="field"><span>Lời nhắn (ngân hàng, tên chủ TK… nếu muốn)</span><textarea id="dP" maxlength="300" style="min-height:70px" placeholder="Nếu thấy dự án hữu ích, bạn có thể ủng hộ mình một ly cà phê…"></textarea></label>
+          <label class="small" style="display:flex;gap:8px;align-items:center;cursor:pointer;margin:6px 0"><input type="checkbox" id="dAfter" checked> Hiện QR nhỏ sau khi nạp thành công</label>
+          <label class="field"><span>Câu cảm ơn dưới QR nhỏ</span><input type="text" id="dThx" maxlength="100" placeholder="Thấy hữu ích thì ủng hộ mình 1 ly cà phê nhé ☕"></label>
+          <button class="btn pri" id="dSave">Lưu QR</button> <span class="tiny" id="dMsg"></span>
+        </div>
+        <div><div class="small muted" style="margin-bottom:6px">Xem trước</div>
+          <img id="dPv" alt="" style="width:200px;height:200px;object-fit:contain;background:#fff;border-radius:12px;padding:8px;display:block"></div>
+      </div></div>
     <div class="card" style="margin-top:12px"><h3 style="font-size:16px">Gói mã Pro (hiện ở ô nhập mã trên trang nạp)</h3>
       <p class="muted small" style="margin:4px 0 10px">Mỗi gói: tên, số lần nạp, giá (ghi tự do, vd "59k"), ghi chú ngắn. Tick ⭐ để làm nổi gói đó. Khi tạo mã, chọn gói là tự điền số lần nạp. Không có gói nào = trang chỉ ghi "5 lần nạp".</p>
       <div class="pkrow tiny muted"><span>Tên gói</span><span>Số lần</span><span>Giá</span><span class="pk-nt">Ghi chú</span><span>⭐</span><span></span></div>
@@ -496,6 +511,32 @@ function settings() {
   $("sSave").onclick = async () => {
     const d = {}; ["zalo", "zaloName", "facebook", "facebookName", "tiktok", "otherName", "other"].forEach((k) => d[k] = $("s_" + k).value.trim());
     await setDoc(doc(db, "config", "site"), d, { merge: true }); Object.assign(D.config, d); toast("Đã lưu liên hệ");
+  };
+  // ----- QR ung ho -----
+  let donImg = "";
+  getDoc(doc(db, "config", "donate")).then((d) => {
+    const v = d.data() || {};
+    donImg = v.img || ""; $("dPv").src = donImg || "";
+    $("dOn").checked = !!v.on; $("dT").value = v.title || ""; $("dP").value = v.text || "";
+    $("dAfter").checked = v.afterFlash !== false; $("dThx").value = v.thanks || "";
+  }).catch(() => {});
+  $("dImg").onchange = async () => {
+    const f = $("dImg").files[0]; if (!f) return;
+    const img = await createImageBitmap(f);
+    const k = Math.min(1, 520 / Math.max(img.width, img.height));
+    const c = document.createElement("canvas"); c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
+    const g = c.getContext("2d"); g.fillStyle = "#fff"; g.fillRect(0, 0, c.width, c.height); g.drawImage(img, 0, 0, c.width, c.height);
+    donImg = c.toDataURL("image/png");
+    if (donImg.length > 700000) donImg = c.toDataURL("image/jpeg", 0.9);
+    $("dPv").src = donImg; $("dOn").checked = true; $("dMsg").textContent = "Bấm Lưu QR để đăng";
+  };
+  $("dSave").onclick = async () => {
+    if ($("dOn").checked && !donImg) return toast("Chọn ảnh QR trước");
+    try {
+      await setDoc(doc(db, "config", "donate"), { on: $("dOn").checked, img: donImg, title: $("dT").value.trim(), text: $("dP").value.trim(),
+        afterFlash: $("dAfter").checked, thanks: $("dThx").value.trim(), updatedAt: serverTimestamp() });
+      $("dMsg").textContent = $("dOn").checked ? "Đang hiện trên trang nạp" : "Đang ẩn"; toast("Đã lưu QR");
+    } catch (e) { toast("Lỗi lưu: " + e.message); }
   };
   // ----- Goi ma Pro -----
   const pkRow = (x = {}) => `<div class="pkrow"><input type="text" class="pk-nm" value="${esc(x.name || "")}" placeholder="Gói cơ bản" maxlength="30">
