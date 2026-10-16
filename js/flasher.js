@@ -270,9 +270,22 @@ function pick(id, scroll) {
   applyUI(siteCfg, cur.board || cur.chip || "ESP32");   // khung "Can chuan bi" co ten mach cua du an
   $("pNote").textContent = cur.note || "";
   $("pNote").classList.toggle("hide", !cur.note);
-  const li = (a) => (a || []).map((x) => `<li>${esc(x)}</li>`).join("");
+  // Danh sach tinh nang: hien 4 dong dau, con lai an sau nut "Xem them"
+  const li = (a) => {
+    a = a || [];
+    const head = a.slice(0, 4).map((x) => `<li>${esc(x)}</li>`).join("");
+    if (a.length <= 4) return head;
+    return head + a.slice(4).map((x) => `<li class="more hide">${esc(x)}</li>`).join("") +
+      `<li class="more-btn"><a href="#" data-more>＋ Xem thêm ${a.length - 4} tính năng</a></li>`;
+  };
   $("fFree").innerHTML = li(cur.free?.features); $("vFree").textContent = cur.free?.ver ? "Phiên bản " + cur.free.ver : "";
-  $("fPro").innerHTML = li(cur.pro?.features); $("vPro").textContent = cur.pro?.ver ? "Phiên bản " + cur.pro.ver : "";
+  $("fPro").innerHTML = li(cur.pro?.features);
+  document.querySelectorAll("#fFree [data-more], #fPro [data-more]").forEach((a) => a.onclick = (e) => {
+    e.preventDefault(); e.stopPropagation();                // khong chon ban khi bam "Xem them"
+    const ul = a.closest("ul"), open = ul.classList.toggle("open");
+    ul.querySelectorAll("li.more").forEach((x) => x.classList.toggle("hide", !open));
+    a.textContent = open ? "－ Thu gọn" : `＋ Xem thêm ${ul.querySelectorAll("li.more").length} tính năng`;
+  }); $("vPro").textContent = cur.pro?.ver ? "Phiên bản " + cur.pro.ver : "";
   const hasF = freeOn(cur), hasP = proOn(cur);
   $("tFree").classList.toggle("hide", !hasF);
   $("tPro").classList.toggle("hide", !hasP);

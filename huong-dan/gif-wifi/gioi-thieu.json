@@ -3,27 +3,24 @@
   "id": "gif-wifi",
   "free": {
     "features": [
-      "Phát GIF, ảnh, video MP4 (tối đa 20 giây) gửi từ điện thoại qua WiFi",
-      "Trang gửi ảnh tự thu nhỏ về 320×240, không cần cài app",
-      "Tắt máy mở lại vẫn còn GIF, tự phát lặp liên tục",
-      "2 nút bấm, cài đặt đơn giản: đèn nền, bộ màu có sẵn",
-      "Nối WiFi nhà để tự cập nhật logo mới",
-      "Đặt sẵn tên, mật khẩu WiFi của máy ngay lúc nạp"
+      "GIF, ảnh, video MP4 (20 giây) qua WiFi",
+      "Tự thu nhỏ ảnh, không cần cài app",
+      "Tắt máy vẫn giữ GIF",
+      "2 nút, cài đặt đèn nền + màu",
+      "Tự cập nhật logo qua WiFi nhà"
     ]
   },
   "pro": {
     "features": [
-      "Đồng hồ lớn + thời tiết theo thành phố: nhiệt độ, cảm giác, độ ẩm, gió, khả năng mưa, dự báo ngày mai",
-      "Lịch tháng dương + âm, ngày lễ Việt Nam, đếm ngược sự kiện sắp tới",
-      "Tự thêm sinh nhật, ngày kỷ niệm (dương hoặc âm), máy tự nhắc mỗi năm",
-      "Ảnh nền đồng hồ tự đổi mỗi ngày, bấm 1 nút để đổi ảnh khác hoặc dùng ảnh của bạn",
-      "Gửi video MP4 tới 60 giây, tự đổi sang GIF",
-      "Giao diện tiếng Việt có dấu, chữ mịn, dễ đọc",
-      "3 nút bấm: chuyển nhanh GIF, đồng hồ, lịch",
-      "Chỉnh màu màn chi tiết: bộ màu, lạnh–ấm, bão hoà, tương phản, gamma, so sánh trước/sau",
-      "Logo khởi động riêng của bạn",
-      "Tải sơ đồ đấu nối + hướng dẫn PDF về máy",
-      "Bản quyền theo mạch, nạp lại bản cập nhật cho mạch đã kích hoạt không tốn thêm lượt"
+      "Đồng hồ + thời tiết chi tiết",
+      "Lịch dương + âm, ngày lễ, nhắc sinh nhật",
+      "Ảnh nền tự đổi mỗi ngày, bấm đổi ảnh",
+      "Video MP4 tới 60 giây",
+      "Tiếng Việt có dấu, 3 nút bấm",
+      "Chỉnh màu màn chi tiết",
+      "Logo khởi động riêng",
+      "Tải sơ đồ + hướng dẫn PDF",
+      "Bản quyền theo mạch, cập nhật miễn phí"
     ]
   }
 }

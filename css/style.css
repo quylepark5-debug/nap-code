@@ -458,3 +458,6 @@ footer{border-top:0}
 .policy p{margin:6px 0;color:var(--sub);line-height:1.6}
 .policy b{color:var(--txt)}
 footer{margin-top:12px}
+.tier li.more-btn{padding-left:0}.tier li.more-btn:before{content:none}
+.tier li.more-btn a{font-weight:600;font-size:12.5px;color:var(--a1)}
+.tier.pro li.more-btn a{color:var(--pro)}
