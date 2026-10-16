@@ -7,7 +7,7 @@
 <meta name="description" content="Nạp firmware cho mạch ESP32 ngay trên trình duyệt, không cần cài phần mềm.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=23">
+<link rel="stylesheet" href="css/style.css?v=25">
 </head>
 <body>
 <div id="pageBg" class="page-bg hide"></div>
@@ -92,12 +92,13 @@
       <section id="infoSec" class="card hide">
       <div class="toolbar" style="margin-bottom:6px">
         <div class="tabs"><button class="tab on" data-tab="guide">📖 Hướng dẫn sử dụng</button><button class="tab" data-tab="pins">🔌 Sơ đồ chân</button></div>
-        <div class="sp" style="flex:1"></div>
-        <div id="dlBox" class="dlbox hide">
-          <button class="btn sm" id="dlPins" type="button" title="Tải sơ đồ đấu nối dạng ảnh">⬇ Sơ đồ (ảnh)</button>
-          <button class="btn sm" id="dlGuide" type="button" title="Tải hướng dẫn + sơ đồ dạng PDF">⬇ Hướng dẫn (PDF)</button>
-        </div>
       </div>
+      <div id="dlBox" class="dlbar hide">
+        <span class="small" style="font-weight:600">📥 Tải về máy:</span>
+        <button class="btn sm" id="dlPins" type="button">🖼 Sơ đồ đấu nối (ảnh)</button>
+        <button class="btn sm" id="dlGuide" type="button">📄 Hướng dẫn + sơ đồ (PDF)</button>
+      </div>
+      <div id="dlLock" class="dlbar lock hide"><span class="small">📥 Tải sơ đồ & hướng dẫn PDF về máy: <b style="color:var(--pro)">có ở bản Pro</b></span></div>
       <div id="guideBox" class="guide"></div>
       <div id="pinsBox" class="hide"></div>
     </section>
@@ -153,6 +154,7 @@
 </div></footer>
 
 <script src="https://cdn.jsdelivr.net/npm/spark-md5@3.0.2/spark-md5.min.js"></script>
-<script type="module" src="js/flasher.js?v=23"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" defer></script>
+<script type="module" src="js/flasher.js?v=25"></script>
 </body>
 </html>

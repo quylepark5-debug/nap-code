@@ -39,29 +39,49 @@ function save(blob, name) {
   setTimeout(() => URL.revokeObjectURL(a.href), 4000);
 }
 
-// Huong dan + so do -> trang in (khach chon "Luu duoi dang PDF")
-export function downloadGuide(g, p, t) {
+// Huong dan + so do -> file PDF tai thang ve may (html2pdf). Neu thu vien chua tai duoc thi mo hop thoai in.
+const PDF_CSS = `
+.pdfdoc{font-family:"Be Vietnam Pro",Segoe UI,Arial,sans-serif;color:#111;font-size:12.5px;line-height:1.55;background:#fff;width:680px;padding:6px 4px;box-sizing:border-box}
+.pdfdoc h1{font-size:20px;margin:0 0 2px;color:#111}.pdfdoc .sub{color:#666;margin-bottom:14px}
+.pdfdoc h2{font-size:16px;margin:18px 0 8px;border-bottom:2px solid #22d3ee;padding-bottom:3px;color:#111}
+.pdfdoc h4{font-size:14px;margin:12px 0 4px;color:#0e7490}.pdfdoc p{margin:4px 0;color:#222}.pdfdoc ol,.pdfdoc ul{margin:4px 0;padding-left:20px;color:#222}.pdfdoc li{margin:2px 0}
+.pdfdoc b{color:#000}.pdfdoc .wire-wrap{background:#0b1220;border-radius:10px;padding:10px;page-break-inside:avoid}
+.pdfdoc svg{width:100%;height:auto;display:block}
+.pdfdoc table{border-collapse:collapse;width:100%;margin-top:10px;page-break-inside:avoid}.pdfdoc th,.pdfdoc td{border:1px solid #ccc;padding:5px 7px;text-align:left;color:#222}
+.pdfdoc th{background:#f1f5f9}.pdfdoc .dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px}
+.pdfdoc .mono{font-family:Consolas,monospace}.pdfdoc .tiny,.pdfdoc .muted{color:#555;font-size:11px}
+.pdfdoc .foot{margin-top:22px;color:#888;font-size:10.5px;border-top:1px solid #ddd;padding-top:6px}`;
+const docHtml = (g, p, t) => `<div class="pdfdoc"><h1>${title(p, t)}</h1><div class="sub">Hướng dẫn sử dụng và sơ đồ đấu nối · ${BRAND.handle}</div>
+  <h2>Hướng dẫn sử dụng</h2>${guideHtml(g.guide)}
+  <h2>Sơ đồ đấu nối</h2>${pinsHtml(g.pins, p.chip || "ESP32")}
+  <div class="foot">Tài liệu dành cho khách dùng bản Pro · ${BRAND.handle} · Không chia sẻ lại khi chưa được phép.</div></div>`;
+
+export async function downloadGuide(g, p, t, btn) {
+  if (window.html2pdf) {
+    const wrap = document.createElement("div");
+    wrap.style.cssText = "position:fixed;left:-10000px;top:0;background:#fff";
+    wrap.innerHTML = `<style>${PDF_CSS}</style>${docHtml(g, p, t)}`;
+    document.body.appendChild(wrap);
+    const old = btn ? btn.textContent : "";
+    if (btn) { btn.disabled = true; btn.textContent = "Đang tạo PDF…"; }
+    try {
+      await window.html2pdf().set({
+        margin: [12, 12, 14, 12], filename: fname(p, t, "huong-dan.pdf"),
+        image: { type: "jpeg", quality: 0.95 }, html2canvas: { scale: 2, backgroundColor: "#ffffff", useCORS: true },
+        jsPDF: { unit: "mm", format: "a4", orientation: "portrait" }, pagebreak: { mode: ["css", "legacy"] },
+      }).from(wrap.querySelector(".pdfdoc")).save();
+    } catch (e) { console.warn(e); printFallback(g, p, t); }
+    wrap.remove();
+    if (btn) { btn.disabled = false; btn.textContent = old; }
+    return;
+  }
+  printFallback(g, p, t);
+}
+
+function printFallback(g, p, t) {
   const html = `<!doctype html><html lang="vi"><head><meta charset="utf-8"><title>${fname(p, t, "huong-dan")}</title>
 <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;600;700&display=swap" rel="stylesheet">
-<style>
-@page{size:A4;margin:14mm}
-body{font-family:"Be Vietnam Pro",Segoe UI,Arial,sans-serif;color:#111;font-size:12.5px;line-height:1.55;margin:0}
-h1{font-size:20px;margin:0 0 2px}.sub{color:#666;margin-bottom:14px}
-h2{font-size:16px;margin:20px 0 8px;border-bottom:2px solid #22d3ee;padding-bottom:3px}
-h4{font-size:14px;margin:14px 0 4px;color:#0e7490}p{margin:4px 0}ol,ul{margin:4px 0;padding-left:20px}li{margin:2px 0}
-a{color:#0e7490}code{background:#eef;padding:0 4px;border-radius:3px}
-.wire-wrap{background:#0b1220;border-radius:10px;padding:10px;break-inside:avoid;-webkit-print-color-adjust:exact;print-color-adjust:exact}
-svg{width:100%;height:auto;display:block}
-table{border-collapse:collapse;width:100%;margin-top:10px;break-inside:avoid}th,td{border:1px solid #ccc;padding:5px 7px;text-align:left}
-th{background:#f1f5f9}.dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px;-webkit-print-color-adjust:exact;print-color-adjust:exact}
-.mono{font-family:Consolas,monospace}.tiny,.muted{color:#555;font-size:11px}
-.foot{margin-top:24px;color:#888;font-size:10.5px;border-top:1px solid #ddd;padding-top:6px}
-</style></head><body>
-<h1>${title(p, t)}</h1><div class="sub">Hướng dẫn sử dụng và sơ đồ đấu nối · ${BRAND.handle}</div>
-<h2>Hướng dẫn sử dụng</h2>${guideHtml(g.guide)}
-<h2>Sơ đồ đấu nối</h2>${pinsHtml(g.pins, p.chip || "ESP32")}
-<div class="foot">Tài liệu dành cho khách dùng bản Pro · ${BRAND.handle} · Không chia sẻ lại khi chưa được phép.</div>
-</body></html>`;
+<style>@page{size:A4;margin:14mm}body{margin:0}${PDF_CSS}.pdfdoc{width:auto}*{-webkit-print-color-adjust:exact;print-color-adjust:exact}</style></head><body>${docHtml(g, p, t)}</body></html>`;
   const f = document.createElement("iframe");
   f.style.cssText = "position:fixed;right:0;bottom:0;width:0;height:0;border:0";
   document.body.appendChild(f);

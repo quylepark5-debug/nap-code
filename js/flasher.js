@@ -255,7 +255,7 @@ function clearTier() {
   $("proWait").classList.add("hide"); $("ownerSkip").classList.add("hide"); $("proFreeNote").classList.add("hide");
   $("quotaBox").classList.add("hide"); clearInterval(cdTimer);
   $("reqCard").open = true;
-  $("dlBox").classList.add("hide");
+  $("dlBox").classList.add("hide"); $("dlLock").classList.add("hide");
   shownTier = null;
   if (!goText) goText = $("go").dataset.label || $("go").innerHTML;
   $("go").disabled = true;
@@ -283,6 +283,7 @@ function showTier(t) {
   $("reqCard").open = false;
   if (shownTier !== t) { shownTier = t; renderInfo(t); }
   $("dlBox").classList.toggle("hide", t !== "pro");
+  $("dlLock").classList.toggle("hide", !(t === "free" && proOn(cur)));
   $("optBox").classList.toggle("hide", !hasOpts);
   if (hasOpts) renderOptions($("optForm"), t, proOn(cur));
   $("go").disabled = false;
@@ -293,7 +294,7 @@ function showTier(t) {
 function lockPro() {
   shownTier = null;
   showQuota();
-  $("dlBox").classList.add("hide");
+  $("dlBox").classList.add("hide"); $("dlLock").classList.add("hide");
   $("proWait").classList.remove("hide");
   $("infoSec").classList.add("hide");
   $("reqCard").open = true;
@@ -338,7 +339,7 @@ $("chkBtn").onclick = async () => {
 let infoReq = 0, lastInfo = null;
 // Ban Pro (da nhap ma): cho tai so do + huong dan ve may
 $("dlPins").onclick = () => lastInfo && downloadPins(lastInfo.g.pins, lastInfo.p, lastInfo.t);
-$("dlGuide").onclick = () => lastInfo && downloadGuide(lastInfo.g, lastInfo.p, lastInfo.t);
+$("dlGuide").onclick = () => lastInfo && downloadGuide(lastInfo.g, lastInfo.p, lastInfo.t, $("dlGuide"));
 async function renderInfo(t) {
   const req = ++infoReq, p = cur;
   $("guideBox").innerHTML = $("pinsBox").innerHTML = '<p class="tiny">Đang tải…</p>';
@@ -439,7 +440,7 @@ $("go").onclick = async () => {
   const rec = { project: cur.id, tier: t, ver: cur[t]?.ver || "", chip: "", mac: "", ok: false, err: "", stage: "", code: t === "pro" && codeInfo ? codeInfo.code : "" };
   $("go").classList.add("hide"); $("run").classList.remove("hide"); $("done").classList.add("hide");
   term.clean(); prog(0, "Đang kết nối mạch…");
-  const lockEls = [...document.querySelectorAll("input,button,select")].filter((e) => !e.disabled);
+  const lockEls = [...document.querySelectorAll("input,button,select,textarea")].filter((e) => !e.disabled && !e.closest("#fbBox,#fbBtn,#donSec"));   // gop y van gui duoc khi dang nap
   lockEls.forEach((e) => e.disabled = true);
 
   const transport = new Transport(port, true);
