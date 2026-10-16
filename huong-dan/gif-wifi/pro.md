@@ -6,7 +6,8 @@
 5. Bấm **Gửi sang ESP32**. Màn hình phát lặp lại liên tục, tắt máy mở lại vẫn còn.
 
 ## Nút bấm (3 nút)
-- **Nhấn B1 hoặc B2**: đổi màn hình **GIF ↔ Đồng hồ + thời tiết** (chuyển ngay, không chờ)
+- **Nhấn B2**: màn sau, **nhấn B1**: màn trước: **GIF → Đồng hồ + thời tiết → Lịch** (chuyển ngay, không chờ)
+- Ở màn **Lịch**: **giữ B1** = tháng trước, **giữ B2** = tháng sau
 - **Nhấn B3 hai lần liền**: xem thông tin WiFi (bấm nút bất kỳ để tắt)
 - **Giữ B3** (khoảng 1 giây): vào **Cài đặt**
 - Trong Cài đặt: **B1** tăng, **B2** giảm (giữ để chạy nhanh), **B3** xuống mục dưới
@@ -42,3 +43,11 @@
 1. Mở mục **WiFi nhà**, nhập tên và mật khẩu WiFi nhà bạn, bấm **Lưu WiFi**.
 2. Khi điện thoại dùng WiFi nhà, mở địa chỉ IP hiện trên máy hoặc **gifplayer.local**, không cần đổi WiFi.
 3. Có WiFi nhà, máy tự cập nhật **logo khởi động mới** (trừ khi bạn đã đặt logo riêng).
+
+## Lịch dương + âm
+- Màn lịch tháng: ngày dương to, ngày âm nhỏ ở góc. Mùng 1 và rằm tô vàng, ngày nghỉ lễ và Chủ nhật tô đỏ
+- Màn đồng hồ có thêm dòng **âm lịch hôm nay**, gặp ngày lễ thì hiện tên ngày lễ
+- Âm lịch tính ngay trong máy, dùng được mọi năm, không cần mạng (chỉ cần WiFi nhà để máy biết hôm nay là ngày nào)
+- Ngày lễ Việt Nam có sẵn: Tết Nguyên đán, Giỗ Tổ, Trung thu, Vu Lan, 30/4, 2/9…
+- **Sự kiện của bạn**: vào trang **192.168.4.1** → mục **Lịch & sự kiện của bạn** → thêm sinh nhật, kỷ niệm (dương hoặc âm lịch, lặp lại mỗi năm) → **Lưu vào ESP32**. Ngày có sự kiện riêng có chấm vàng trên lịch
+
