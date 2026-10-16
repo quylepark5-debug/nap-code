@@ -1,0 +1,14 @@
+Màn ST7789 | VCC | 3V3 | module 3.3V
+Màn ST7789 | GND | GND
+Màn ST7789 | SCL / SCK | GPIO12
+Màn ST7789 | SDA / MOSI | GPIO11
+Màn ST7789 | RES / RST | GPIO14
+Màn ST7789 | DC | GPIO13
+Màn ST7789 | CS | GPIO10
+Màn ST7789 | BLK (đèn nền) | GPIO6
+Nút B1 | Chân 1 | GPIO4
+Nút B1 | Chân 2 | GND
+Nút B2 | Chân 1 | GPIO5
+Nút B2 | Chân 2 | GND
+Nút B3 | Chân 1 | GPIO7 | chỉ bản Pro
+Nút B3 | Chân 2 | GND

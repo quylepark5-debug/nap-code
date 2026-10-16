@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Nạp code ESP32 · @tapsualoa</title>
+<meta name="description" content="Nạp firmware cho mạch ESP32 ngay trên trình duyệt, không cần cài phần mềm.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css?v=9">
+</head>
+<body>
+<header class="top"><div class="wrap">
+  <a class="logo" href="./"><i>⚡</i><span id="brand">@tapsualoa</span></a>
+  <div class="sp"></div>
+  <a class="btn sm ghost" id="tt" href="https://www.tiktok.com/@tapsualoa" target="_blank" rel="noopener">TikTok</a>
+</div></header>
+
+<main class="wrap">
+  <section class="hero">
+    <h1 id="uiHeroT">Nạp code ESP32 <b>bằng 1 nút bấm</b></h1>
+    <p id="uiHeroP">Không cần cài Arduino. Cắm mạch vào máy tính, chọn dự án, bấm nạp.</p>
+    <div class="steps" id="uiSteps"><span><b>1</b>Chọn dự án</span><span><b>2</b>Chọn bản</span><span><b>3</b>Cắm mạch &amp; nạp</span></div>
+  </section>
+
+  <div id="noSerial" class="note warn hide" style="text-align:center">
+    ⚠️ Trình duyệt này không nạp được. Hãy mở trang bằng <b>Chrome</b> hoặc <b>Edge</b> trên <b>máy tính</b> (Windows / macOS / Linux).
+  </div>
+
+  <div class="sec-t"><h2 id="uiProjT">Dự án</h2><span class="tiny" id="pcount"></span></div>
+  <div class="grid" id="projects"><div class="card muted">Đang tải…</div></div>
+
+  <section id="flashSec" class="flash hide">
+    <div class="card">
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+        <h2 id="pName" style="font-size:22px;flex:1"></h2><span class="pill" id="pChip"></span>
+      </div>
+      <p class="muted small" id="pDesc" style="margin:8px 0 0"></p>
+
+      <div class="stepbox">
+        <div style="flex:1"><div class="step-t"><b>1</b> Kiểm tra mạch <span class="tiny">(nên làm)</span></div>
+          <div class="tiny">Cắm mạch vào máy tính rồi bấm kiểm tra: trang đọc chip, bộ nhớ và cho biết mạch có hợp với dự án không.</div></div>
+        <button class="btn" id="chkBtn" type="button">🔍 Kiểm tra mạch</button>
+      </div>
+      <div id="chkRes" class="hide"></div>
+
+      <div class="step-t" style="margin-top:18px"><b>2</b> Chọn phiên bản</div>
+      <div id="noTier" class="note warn hide">Dự án này đang tạm đóng, chưa có phiên bản để nạp.</div>
+      <div class="tiers" id="tiers">
+        <label class="tier" id="tFree"><input type="radio" name="tier" value="free"><span class="chk"></span>
+          <h4>Bản thường</h4><div class="tiny" id="vFree"></div><ul id="fFree"></ul></label>
+        <label class="tier pro" id="tPro"><input type="radio" name="tier" value="pro"><span class="chk"></span>
+          <h4>Bản Pro <span class="pill pro">PRO</span></h4><div class="tiny" id="vPro"></div><ul id="fPro"></ul></label>
+      </div>
+
+      <div id="proBox" class="hide">
+        <label class="field"><span>Mã kích hoạt Pro</span>
+          <input type="text" id="code" class="code-in" placeholder="XXXX-XXXX-XXXX" autocomplete="off" spellcheck="false" maxlength="14"></label>
+        <div id="codeMsg" class="note hide"></div>
+        <div class="note">📌 Mỗi mã Pro dùng được <b>5 lần nạp</b> (mỗi lần bấm nạp bản Pro tính 1 lần, kể cả nạp lại cho cùng mạch).
+          Nạp lỗi rồi bấm <b>Thử lại</b> ngay trên trang thì không bị tính thêm.</div>
+        <div class="note">Chưa có mã? Liên hệ để được cấp mã:
+          <div class="contact" data-contact></div></div>
+      </div>
+
+      <details id="optBox" class="opts hide">
+        <summary>⚙️ Tùy chỉnh máy trước khi nạp <span class="tiny">(không bắt buộc)</span></summary>
+        <div class="tiny" style="margin:6px 0 10px">Các lựa chọn được ghi thẳng vào mạch lúc nạp, không gửi lên máy chủ. Sau này vẫn đổi lại được trên máy.</div>
+        <div id="optForm" class="opt-grid"></div>
+        <div id="optMsg" class="note bad hide"></div>
+      </details>
+
+      <label class="small muted" style="display:flex;gap:8px;align-items:center;margin-top:14px;cursor:pointer">
+        <input type="checkbox" id="erase"> Xoá sạch bộ nhớ trước khi nạp (mất GIF, cài đặt cũ)</label>
+
+      <div style="margin-top:16px"><button class="btn pri big" id="go">⚡ Kết nối mạch &amp; nạp</button></div>
+      <div id="run" class="hide">
+        <div class="prog"><i id="bar"></i></div>
+        <div class="stage"><span id="stage">Chuẩn bị…</span><span id="pct">0%</span></div>
+        <details><summary>Chi tiết</summary><div class="log" id="log"></div></details>
+      </div>
+      <div id="done" class="ok-box hide"></div>
+    </div>
+
+    <div class="card">
+      <h3 style="font-size:17px;margin-bottom:6px" id="uiReqT">Cần chuẩn bị</h3>
+      <ul class="req" style="padding-left:18px;margin:8px 0" id="uiReqL">
+        <li><b>Máy tính</b> + trình duyệt <b>Chrome</b> hoặc <b>Edge</b></li>
+        <li>Mạch: <b id="pBoard">ESP32</b></li>
+        <li>Cáp USB <b>có dây dữ liệu</b> (không dùng cáp chỉ sạc)</li>
+        <li>Windows chưa nhận cổng COM? Cài driver <a href="https://www.wch-ic.com/downloads/CH341SER_EXE.html" target="_blank" rel="noopener">CH340</a> hoặc <a href="https://www.silabs.com/developers/usb-to-uart-bridge-vcp-drivers" target="_blank" rel="noopener">CP210x</a></li>
+      </ul>
+      <h3 style="font-size:17px;margin:18px 0 6px" id="uiFixT">Không kết nối được?</h3>
+      <ol class="req" style="padding-left:18px;margin:8px 0" id="uiFixL">
+        <li>Giữ nút <b>BOOT</b>, nhấn rồi thả <b>RST</b>, sau đó thả <b>BOOT</b></li>
+        <li>Bấm nạp lại</li>
+        <li>Nạp xong nhấn <b>RST</b> một lần</li>
+      </ol>
+      <div id="pNote" class="note hide"></div>
+    </div>
+  </section>
+
+  <section id="infoSec" class="card hide" style="margin-top:18px">
+    <div class="toolbar" style="margin-bottom:6px">
+      <div class="tabs"><button class="tab on" data-tab="guide">📖 Hướng dẫn sử dụng</button><button class="tab" data-tab="pins">🔌 Sơ đồ chân</button></div>
+      <div class="sp" style="flex:1"></div>
+      
+    </div>
+    <div id="guideBox" class="guide"></div>
+    <div id="pinsBox" class="hide"></div>
+  </section>
+
+  <section class="card" style="margin-top:28px;text-align:center">
+    <h2 style="font-size:20px" id="uiContT">Liên hệ</h2>
+    <p class="muted small" style="margin:6px 0 0" id="uiContP">Hỏi cách lắp mạch, góp ý hoặc báo lỗi</p>
+    <div class="contact" data-contact data-big style="justify-content:center;margin-top:14px"></div>
+  </section>
+</main>
+
+<footer><div class="wrap" id="uiFoot">
+  Trang ghi nhận lượt truy cập (loại máy, trình duyệt, quốc gia) và mã định danh của mạch khi nạp, để thống kê và hỗ trợ.<br>
+  Firmware thuộc bản quyền của <span id="brand2">@tapsualoa</span>. Không sao chép, phát hành lại khi chưa được phép.
+</div></footer>
+
+<script src="https://cdn.jsdelivr.net/npm/spark-md5@3.0.2/spark-md5.min.js"></script>
+<script type="module" src="js/flasher.js?v=9"></script>
+</body>
+</html>

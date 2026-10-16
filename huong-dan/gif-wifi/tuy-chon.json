@@ -1,0 +1,197 @@
+{
+  "_ghi_chu": "Tuy chon khach chinh truoc khi nap. 'key' phai trung voi firmware (cau_hinh_nap.h), khong doi. Duoc sua: label, help, default, thu tu. tier: all = ca 2 ban, pro = chi ban Pro.",
+  "options": [
+    {
+      "key": "ap_ssid",
+      "label": "Tên WiFi của máy",
+      "type": "text",
+      "default": "ESP32-GIF",
+      "max": 32,
+      "tier": "all",
+      "help": "Tên mạng WiFi máy phát ra để điện thoại kết nối"
+    },
+    {
+      "key": "ap_pass",
+      "label": "Mật khẩu WiFi của máy",
+      "type": "text",
+      "default": "12345678",
+      "min": 8,
+      "max": 63,
+      "allowEmpty": true,
+      "tier": "all",
+      "help": "Ít nhất 8 ký tự. Để trống = không cần mật khẩu"
+    },
+    {
+      "key": "sta_ssid",
+      "label": "Tên WiFi nhà (không bắt buộc)",
+      "type": "text",
+      "default": "",
+      "max": 32,
+      "tier": "all",
+      "help": "Nối WiFi nhà để máy tự cập nhật logo (bản Pro: lấy giờ, thời tiết)"
+    },
+    {
+      "key": "sta_pass",
+      "label": "Mật khẩu WiFi nhà",
+      "type": "password",
+      "default": "",
+      "max": 63,
+      "tier": "all",
+      "help": "Chỉ ghi vào mạch của bạn, không gửi lên máy chủ"
+    },
+    {
+      "key": "bright",
+      "label": "Độ sáng đèn nền",
+      "type": "range",
+      "default": 80,
+      "min": 10,
+      "max": 100,
+      "step": 10,
+      "unit": "%",
+      "tier": "all"
+    },
+    {
+      "key": "preset",
+      "label": "Bộ màu màn hình",
+      "type": "select",
+      "default": "0",
+      "tier": "all",
+      "choices": [
+        [
+          "0",
+          "Chuẩn"
+        ],
+        [
+          "1",
+          "Ấm dịu"
+        ],
+        [
+          "2",
+          "Lạnh trong"
+        ],
+        [
+          "3",
+          "Rực rỡ"
+        ],
+        [
+          "4",
+          "Ban đêm"
+        ],
+        [
+          "5",
+          "Ngoài nắng"
+        ],
+        [
+          "6",
+          "Dịu mắt"
+        ]
+      ]
+    },
+    {
+      "key": "rot",
+      "label": "Xoay màn hình 180°",
+      "type": "check",
+      "default": false,
+      "tier": "all",
+      "help": "Bật nếu chữ trên màn bị ngược do cách lắp"
+    },
+    {
+      "key": "home",
+      "label": "Màn hình khi bật máy",
+      "type": "select",
+      "default": "0",
+      "tier": "pro",
+      "choices": [
+        [
+          "0",
+          "GIF"
+        ],
+        [
+          "1",
+          "Đồng hồ + thời tiết"
+        ]
+      ]
+    },
+    {
+      "key": "city",
+      "label": "Thời tiết tại",
+      "type": "city",
+      "default": "TP. Hồ Chí Minh",
+      "tier": "pro"
+    },
+    {
+      "key": "wxh",
+      "label": "Lấy thời tiết mỗi",
+      "type": "select",
+      "default": "0",
+      "tier": "pro",
+      "choices": [
+        [
+          "0",
+          "1 giờ"
+        ],
+        [
+          "1",
+          "2 giờ"
+        ],
+        [
+          "2",
+          "3 giờ"
+        ],
+        [
+          "3",
+          "4 giờ"
+        ],
+        [
+          "4",
+          "5 giờ"
+        ],
+        [
+          "5",
+          "6 giờ"
+        ],
+        [
+          "6",
+          "12 giờ"
+        ],
+        [
+          "7",
+          "24 giờ"
+        ]
+      ]
+    },
+    {
+      "key": "clkbg",
+      "label": "Nền màn đồng hồ",
+      "type": "select",
+      "default": "0",
+      "tier": "pro",
+      "choices": [
+        [
+          "0",
+          "Ảnh theo ngày (tự đổi)"
+        ],
+        [
+          "2",
+          "Đêm sao"
+        ],
+        [
+          "3",
+          "Hoàng hôn"
+        ],
+        [
+          "4",
+          "Rừng sương"
+        ],
+        [
+          "5",
+          "Đại dương"
+        ],
+        [
+          "6",
+          "Tối giản"
+        ]
+      ]
+    }
+  ]
+}

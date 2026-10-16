@@ -1,0 +1,347 @@
+// Trang nap cong khai
+import { ESPLoader, Transport } from "https://cdn.jsdelivr.net/npm/esptool-js@0.7.0/bundle.js";
+import {
+  auth, db, BRAND, authReady, signInAnonymously, deviceInfo, country, esc, normCode,
+  doc, getDoc, getDocs, updateDoc, setDoc, addDoc, collection, serverTimestamp, increment, arrayUnion, MAX_USES,
+} from "./fb.js";
+import { loadGuide, guideHtml, pinsHtml } from "./guides.js";
+import { applyUI } from "./giaodien.js";
+import { identify, espDetails, checkFit } from "./chip.js";
+import { loadOptions, renderOptions, checkOptions, buildConfig, attachConfig } from "./tuychon.js";
+
+const $ = (id) => document.getElementById(id);
+let siteCfg = {};
+let projects = [], cur = null, codeInfo = null, busy = false, uid = null;
+let unlocked = null; // ma da kich hoat trong lan mo trang nay -> "Thu lai" khong tinh them luot
+
+const md5u8 = (u8) => SparkMD5.ArrayBuffer.hash(u8.buffer.slice(u8.byteOffset, u8.byteOffset + u8.byteLength));
+
+// ---------- Khoi dong ----------
+$("brand").textContent = BRAND.handle;
+$("brand2").textContent = BRAND.handle;
+if (!("serial" in navigator)) $("noSerial").classList.remove("hide");
+
+(async () => {
+  try {
+    if (!(await authReady())) await signInAnonymously(auth);
+    uid = auth.currentUser.uid;
+  } catch (e) { console.warn("auth", e); }
+  logVisit();
+  loadContact();
+  await loadProjects();
+})();
+
+async function logVisit() {
+  if (!uid) return;
+  try {
+    await addDoc(collection(db, "visits"), {
+      ...deviceInfo(), uid, at: serverTimestamp(), page: "index",
+      ref: (document.referrer || "").slice(0, 200), country: await country(),
+      hash: location.hash.slice(1, 60),
+    });
+  } catch (e) { console.warn("visit", e); }
+}
+
+async function loadContact() {
+  try {
+    const c = (await getDoc(doc(db, "config", "site"))).data() || {};
+    siteCfg = c;
+    applyUI(c, cur?.board || cur?.chip || "ESP32");
+    renderContact(c);
+  } catch (e) { console.warn("contact", e); renderContact({}); }
+}
+function renderContact(c) {
+  const tt = (c.tiktok || BRAND.handle).replace(/^@/, "");
+  const list = [];
+  // Zalo: khong bao gio hien so dien thoai, chi hien chu ban tu dat (zaloName)
+  if (c.zalo) list.push(["💬 Zalo", c.zaloName || "", /^https?:/.test(c.zalo) ? c.zalo : "https://zalo.me/" + c.zalo.replace(/\D/g, "")]);
+  if (c.facebook) list.push(["📘 Facebook", c.facebookName || "", c.facebook]);
+  list.push(["🎵 TikTok", "@" + tt, "https://www.tiktok.com/@" + tt]);
+  if (c.other) list.push(["🔗 " + (c.otherName || "Liên hệ"), "", c.other]);
+  $("tt").href = "https://www.tiktok.com/@" + tt;
+  document.querySelectorAll("[data-contact]").forEach((box) => {
+    const big = box.hasAttribute("data-big");
+    box.innerHTML = list.map(([n, v, u]) =>
+      `<a class="btn ${big ? "" : "sm"}" href="${esc(u)}" target="_blank" rel="noopener">${esc(n)}${v ? ` <span class="muted" style="font-weight:500">${esc(v)}</span>` : ""}</a>`).join("");
+  });
+}
+
+async function loadProjects() {
+  try {
+    const s = await getDocs(collection(db, "projects"));
+    projects = s.docs.map((d) => ({ id: d.id, ...d.data() })).filter((p) => p.visible !== false)
+      .sort((a, b) => (a.order ?? 99) - (b.order ?? 99));
+  } catch (e) {
+    $("projects").innerHTML = `<div class="card note bad">Không tải được danh sách dự án. Thử tải lại trang.</div>`;
+    return;
+  }
+  $("pcount").textContent = projects.length + " dự án";
+  $("projects").innerHTML = projects.map((p) => `
+    <div class="card proj" data-id="${esc(p.id)}">
+      <div class="cov">${p.cover ? `<img src="${esc(p.cover)}" alt="">` : esc(p.emoji || "🔧")}</div>
+      <div class="bd"><h3>${esc(p.name)}</h3><div class="muted small">${esc(p.desc || "")}</div>
+        <div class="meta"><span class="pill">${esc(p.chip || "ESP32")}</span>
+          ${freeOn(p) ? '<span class="pill ok">Miễn phí</span>' : ""}
+          ${proOn(p) ? '<span class="pill pro">Có bản Pro</span>' : ""}</div></div>
+    </div>`).join("") || '<div class="card muted">Chưa có dự án nào.</div>';
+  document.querySelectorAll(".proj").forEach((el) => el.onclick = () => pick(el.dataset.id, true));
+  const h = decodeURIComponent(location.hash.slice(1));
+  if (h && projects.some((p) => p.id === h)) pick(h, true);
+  else if (projects.length === 1) pick(projects[0].id, false);
+}
+
+// ---------- Chon du an / ban ----------
+const freeOn = (p) => p.freeOn !== false && !!p.free?.parts?.length;   // chu trang bat/tat tung ban trong trang quan ly
+const proOn = (p) => p.proOn !== false && !!p.pro?.parts?.length;
+let hasOpts = false, chipInfo = null, savedPort = null, goText = "";
+
+function pick(id, scroll) {
+  if (busy) return;
+  cur = projects.find((p) => p.id === id);
+  document.querySelectorAll(".proj").forEach((el) => el.classList.toggle("sel", el.dataset.id === id));
+  history.replaceState(null, "", "#" + id);
+  $("flashSec").classList.remove("hide");
+  $("pName").textContent = cur.name;
+  $("pChip").textContent = cur.chip || "ESP32";
+  $("pDesc").textContent = cur.longDesc || cur.desc || "";
+  applyUI(siteCfg, cur.board || cur.chip || "ESP32");   // khung "Can chuan bi" co ten mach cua du an
+  $("pNote").textContent = cur.note || "";
+  $("pNote").classList.toggle("hide", !cur.note);
+  const li = (a) => (a || []).map((x) => `<li>${esc(x)}</li>`).join("");
+  $("fFree").innerHTML = li(cur.free?.features); $("vFree").textContent = cur.free?.ver ? "Phiên bản " + cur.free.ver : "";
+  $("fPro").innerHTML = li(cur.pro?.features); $("vPro").textContent = cur.pro?.ver ? "Phiên bản " + cur.pro.ver : "";
+  const hasF = freeOn(cur), hasP = proOn(cur);
+  $("tFree").classList.toggle("hide", !hasF);
+  $("tPro").classList.toggle("hide", !hasP);
+  $("tiers").classList.toggle("one", hasF !== hasP);
+  $("noTier").classList.toggle("hide", hasF || hasP);
+  clearTier();
+  $("done").classList.add("hide"); $("run").classList.add("hide"); $("go").classList.remove("hide");
+  codeInfo = null; $("code").value = ""; $("codeMsg").classList.add("hide");
+  showFit();
+  hasOpts = false;
+  const pid = cur.id;
+  loadOptions(pid).then((has) => {
+    if (!cur || cur.id !== pid) return;
+    hasOpts = has;
+    if (tier()) { $("optBox").classList.toggle("hide", !has); if (has) renderOptions($("optForm"), tier(), proOn(cur)); }
+  });
+  if (scroll) $("flashSec").scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+// Chua chon ban: an huong dan, so do chan, tuy chinh; khoa nut nap
+function clearTier() {
+  document.querySelectorAll("input[name=tier]").forEach((r) => r.checked = false);
+  $("tFree").classList.remove("on"); $("tPro").classList.remove("on");
+  $("proBox").classList.add("hide");
+  $("infoSec").classList.add("hide");
+  $("optBox").classList.add("hide");
+  if (!goText) goText = $("go").dataset.label || $("go").innerHTML;
+  $("go").disabled = true;
+  $("go").textContent = "Chọn phiên bản ở trên để nạp";
+}
+function tier() { return document.querySelector("input[name=tier]:checked")?.value || null; }
+function setTier(t) {
+  document.querySelector(`input[name=tier][value=${t}]`).checked = true;
+  $("tFree").classList.toggle("on", t === "free");
+  $("tPro").classList.toggle("on", t === "pro");
+  $("proBox").classList.toggle("hide", t !== "pro");
+  $("infoSec").classList.remove("hide");
+  renderInfo(t);
+  $("optBox").classList.toggle("hide", !hasOpts);
+  if (hasOpts) renderOptions($("optForm"), t, proOn(cur));
+  $("go").disabled = false;
+  $("go").innerHTML = $("go").dataset.label || goText;
+}
+
+// ---------- Kiem tra mach ----------
+function showFit() {
+  const box = $("chkRes");
+  if (!chipInfo) { box.classList.add("hide"); return; }
+  const i = chipInfo, f = checkFit(i, cur);
+  const row = (k, v) => v ? `<tr><td class="muted">${k}</td><td><b>${esc(v)}</b></td></tr>` : "";
+  box.innerHTML = `<div class="note ${f.ok ? (f.warn.length ? "warn" : "ok") : "bad"}" style="margin-top:10px">
+      ${f.ok ? (f.warn.length ? "⚠️ Mạch dùng được, lưu ý:" : "✅ Mạch phù hợp với dự án này") : "❌ Mạch chưa phù hợp:"}
+      ${[...f.problems, ...f.warn].map((x) => `<div>• ${esc(x)}</div>`).join("")}</div>
+    <table class="tbl" style="margin-top:6px">${row("Mạch", i.desc)}${row("Chip", i.kind === "esp" ? i.chip : i.chip)}
+      ${row("Flash", i.flashMB ? i.flashMB + " MB" : "")}${row("PSRAM", i.kind === "esp" ? (i.psramMB ? i.psramMB + " MB" : "Không thấy") : "")}
+      ${row("Tính năng", (i.features || []).join(", "))}${row("MAC", i.mac)}${row("Cổng USB", i.usb + (i.usbName ? " · " + i.usbName : ""))}</table>`;
+  box.classList.remove("hide");
+}
+$("chkBtn").onclick = async () => {
+  if (busy) return;
+  if (!("serial" in navigator)) return alert("Hãy dùng Chrome hoặc Edge trên máy tính.");
+  let port;
+  try { port = await navigator.serial.requestPort(); } catch { return; }
+  busy = true; $("chkBtn").disabled = true; $("chkBtn").textContent = "Đang kiểm tra…";
+  $("chkRes").classList.remove("hide"); $("chkRes").innerHTML = '<div class="note" style="margin-top:10px">Đang đọc chip… nếu lâu quá, giữ <b>BOOT</b>, nhấn <b>RST</b> rồi thả <b>BOOT</b>.</div>';
+  try {
+    chipInfo = await identify(port, (m) => console.log("[kiem tra]", m));
+    savedPort = port;
+    showFit();
+  } catch (e) {
+    $("chkRes").innerHTML = `<div class="note bad" style="margin-top:10px">Không đọc được mạch: ${esc(e.message || e)}</div>`;
+  } finally { busy = false; $("chkBtn").disabled = false; $("chkBtn").textContent = "🔍 Kiểm tra mạch"; }
+};
+
+// ---------- Huong dan su dung + so do chan (theo ban dang xem) ----------
+let infoReq = 0;
+async function renderInfo(t) {
+  const req = ++infoReq, p = cur;
+  $("guideBox").innerHTML = $("pinsBox").innerHTML = '<p class="tiny">Đang tải…</p>';
+  const g = await loadGuide(p, t);
+  if (req !== infoReq) return;                     // khach da doi du an / ban khac
+  $("guideBox").innerHTML = guideHtml(g.guide);
+  $("pinsBox").innerHTML = pinsHtml(g.pins, p.chip || "ESP32");
+}
+document.querySelectorAll("#infoSec .tab").forEach((b) => b.onclick = () => {
+  document.querySelectorAll("#infoSec .tab").forEach((x) => x.classList.toggle("on", x === b));
+  $("guideBox").classList.toggle("hide", b.dataset.tab !== "guide");
+  $("pinsBox").classList.toggle("hide", b.dataset.tab !== "pins");
+});
+document.querySelectorAll("input[name=tier]").forEach((r) => r.onchange = () => setTier(r.value));
+
+// ---------- Kiem tra ma Pro ----------
+function codeMsg(t, cls) { const m = $("codeMsg"); m.textContent = t; m.className = "note " + (cls || ""); m.classList.toggle("hide", !t); }
+let codeT = 0;
+$("code").oninput = () => {
+  const el = $("code"), v = normCode(el.value);
+  if (el.value !== v) el.value = v;
+  codeInfo = null; clearTimeout(codeT);
+  if (v.length < 14) { codeMsg(""); return; }
+  codeT = setTimeout(() => checkCode(v), 300);
+};
+async function checkCode(c) {
+  codeMsg("Đang kiểm tra mã…");
+  try {
+    const s = await getDoc(doc(db, "codes", c));
+    if (!s.exists()) return codeMsg("Mã không đúng.", "bad");
+    const d = s.data();
+    if (!d.active) return codeMsg("Mã này đã bị khoá.", "bad");
+    if (d.project !== "*" && d.project !== cur.id) return codeMsg("Mã này dành cho dự án khác.", "bad");
+    const max = d.maxUses || MAX_USES, left = max - (d.uses || 0);
+    if (left <= 0 && !(unlocked && unlocked.code === c && unlocked.project === cur.id))
+      return codeMsg(`Mã đã dùng hết ${max}/${max} lần nạp. Liên hệ để được cấp mã mới.`, "bad");
+    codeInfo = { code: c, ...d };
+    codeMsg(`✓ Mã hợp lệ · còn ${left}/${max} lần nạp`, "ok");
+  } catch (e) { codeMsg("Không kiểm tra được mã, thử lại.", "bad"); }
+}
+
+// ---------- Nap ----------
+const logEl = $("log");
+const log = (t) => { logEl.textContent += t + "\n"; logEl.scrollTop = 1e9; };
+const term = { clean() { logEl.textContent = ""; }, writeLine: log, write: (t) => { logEl.textContent += t; } };
+function prog(p, s) { $("bar").style.width = (p * 100).toFixed(1) + "%"; $("pct").textContent = Math.round(p * 100) + "%"; if (s) $("stage").textContent = s; }
+
+class Fail extends Error { constructor(msg, stage) { super(msg); this.stage = stage; } }
+
+async function download(t, onP) {
+  const parts = cur[t].parts, out = [];
+  const total = parts.reduce((a, p) => a + p.chunks, 0); let n = 0;
+  for (let i = 0; i < parts.length; i++) {
+    const p = parts[i], buf = new Uint8Array(p.size); let off = 0;
+    for (let j = 0; j < p.chunks; j++) {
+      const s = await getDoc(doc(db, "projects", cur.id, t, `${i}_${j}`));
+      if (!s.exists()) throw new Fail("Thiếu dữ liệu firmware trên máy chủ", "tải");
+      const u8 = s.data().d.toUint8Array(); buf.set(u8, off); off += u8.length;
+      onP(++n / total);
+    }
+    if (off !== p.size || (p.md5 && md5u8(buf) !== p.md5)) throw new Fail("Firmware tải về bị lỗi, thử lại", "tải");
+    out.push({ data: buf, address: p.offset });
+  }
+  return out;
+}
+
+$("go").onclick = async () => {
+  if (busy || !cur || !tier()) return;
+  if (!("serial" in navigator)) return alert("Hãy dùng Chrome hoặc Edge trên máy tính.");
+  const t = tier();
+  if (t === "pro" && !codeInfo) { codeMsg("Nhập mã Pro hợp lệ trước khi nạp.", "bad"); $("code").focus(); return; }
+  const useOpt = !$("optBox").classList.contains("hide");
+  const optErr = useOpt ? checkOptions($("optForm")) : "";
+  $("optMsg").textContent = optErr; $("optMsg").classList.toggle("hide", !optErr);
+  if (optErr) { $("optBox").open = true; $("optMsg").scrollIntoView({ behavior: "smooth", block: "center" }); return; }
+  let cfgBlob = null;
+  try { cfgBlob = useOpt ? buildConfig($("optForm"), t) : null; } catch (e) { $("optMsg").textContent = e.message; $("optMsg").classList.remove("hide"); return; }
+
+  let port;
+  if (savedPort) port = savedPort;                 // da kiem tra mach -> dung lai cong do, khong hoi lai
+  else { try { port = await navigator.serial.requestPort(); } catch { return; } }   // khach bam Huy
+  savedPort = null;
+
+  busy = true; const t0 = Date.now();
+  const rec = { project: cur.id, tier: t, ver: cur[t]?.ver || "", chip: "", mac: "", ok: false, err: "", stage: "", code: t === "pro" ? codeInfo.code : "" };
+  $("go").classList.add("hide"); $("run").classList.remove("hide"); $("done").classList.add("hide");
+  term.clean(); prog(0, "Đang kết nối mạch…");
+  const lockEls = [...document.querySelectorAll("input,button,select")].filter((e) => !e.disabled);
+  lockEls.forEach((e) => e.disabled = true);
+
+  const transport = new Transport(port, true);
+  try {
+    const loader = new ESPLoader({ transport, baudrate: 921600, terminal: term });
+    rec.stage = "kết nối";
+    try { await loader.main(); } catch (e) { throw new Fail("Không kết nối được mạch. Thử giữ BOOT, nhấn RST rồi bấm nạp lại.", "kết nối"); }
+    const det = await espDetails(loader);
+    rec.chip = det.chip;
+    rec.mac = det.mac;
+    chipInfo = { ...det, desc: det.desc, usb: "", usbName: "" };
+    const fit = checkFit(det, cur);
+    if (!fit.ok) throw new Fail(fit.problems.join(" "), "kiểm tra mạch");
+    log(`Mạch: ${rec.chip} · MAC ${rec.mac}`);
+
+    if (t === "pro" && !(unlocked && unlocked.code === codeInfo.code && unlocked.project === cur.id)) {
+      rec.stage = "kích hoạt";
+      prog(0.02, "Đang kích hoạt mã Pro…");
+      try {
+        await updateDoc(doc(db, "codes", codeInfo.code), {
+          uid, lastMac: rec.mac, macs: arrayUnion(rec.mac), usedAt: serverTimestamp(), uses: increment(1) });
+        await setDoc(doc(db, "unlocks", uid), { code: codeInfo.code, project: cur.id, at: serverTimestamp() });
+      } catch (e) { throw new Fail("Kích hoạt mã không thành công (mã sai, bị khoá hoặc đã hết lượt).", "kích hoạt"); }
+      unlocked = { code: codeInfo.code, project: cur.id };
+      const max = codeInfo.maxUses || MAX_USES;
+      codeInfo.uses = (codeInfo.uses || 0) + 1;
+      log(`Đã dùng mã: ${codeInfo.uses}/${max} lần`);
+    }
+
+    rec.stage = "tải";
+    const files = attachConfig(await download(t, (p) => prog(0.03 + p * 0.12, "Đang tải firmware…")), cfgBlob);
+    if (cfgBlob) log("Ghi kèm cấu hình tùy chỉnh của bạn");
+
+    rec.stage = "nạp";
+    const sizes = files.map((f) => f.data.length), all = sizes.reduce((a, b) => a + b, 0);
+    await loader.writeFlash({
+      fileArray: files, flashMode: "keep", flashFreq: "keep", flashSize: "keep",
+      eraseAll: $("erase").checked, compress: true,
+      reportProgress: (i, w, tot) => {
+        const before = sizes.slice(0, i).reduce((a, b) => a + b, 0);
+        prog(0.15 + 0.85 * ((before + (w / tot) * sizes[i]) / all), "Đang nạp…");
+      },
+      calculateMD5Hash: md5u8,
+    });
+    rec.stage = "khởi động";
+    await loader.after("hard_reset");
+    rec.ok = true; rec.stage = "xong";
+    prog(1, "Hoàn tất");
+    $("run").classList.add("hide");
+    $("done").innerHTML = `<div class="ic">🎉</div><h3>Nạp thành công!</h3>
+      <p class="muted small">Mạch đang khởi động lại. Nếu màn hình chưa sáng, nhấn nút <b>RST</b> một lần.</p>
+      ${t === "pro" ? `<p class="pill pro">Mã Pro còn ${Math.max(0, (codeInfo.maxUses || MAX_USES) - codeInfo.uses)}/${codeInfo.maxUses || MAX_USES} lần nạp</p><br><br>` : ""}
+      <button class="btn" onclick="location.reload()">Nạp mạch khác</button>`;
+    $("done").classList.remove("hide");
+  } catch (e) {
+    rec.err = String(e?.message || e).slice(0, 300);
+    if (e instanceof Fail) rec.stage = e.stage;
+    log("LỖI: " + rec.err);
+    $("stage").textContent = "Lỗi";
+    $("done").innerHTML = `<div class="ic">⚠️</div><h3>Chưa nạp được</h3><p class="note bad">${esc(e instanceof Fail ? e.message : "Lỗi khi " + rec.stage + ": " + rec.err)}</p>
+      <button class="btn" id="retry">Thử lại</button>`;
+    $("done").classList.remove("hide");
+    $("retry").onclick = () => { $("done").classList.add("hide"); $("run").classList.add("hide"); $("go").classList.remove("hide"); };
+  } finally {
+    try { await transport.disconnect(); } catch {}
+    busy = false;
+    lockEls.forEach((e) => e.disabled = false);
+    rec.ms = Date.now() - t0;
+    if (uid) addDoc(collection(db, "flashes"), { ...rec, uid, at: serverTimestamp() }).catch((e) => console.warn("flash log", e));
+  }
+};

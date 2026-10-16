@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Quản lý · Trang nạp</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css?v=9">
+</head>
+<body>
+<header class="top"><div class="wrap">
+  <a class="logo" href="./"><i>⚡</i><span>Quản lý</span></a>
+  <div class="sp"></div>
+  <span class="small muted hide" id="who"></span>
+  <button class="btn sm hide" id="out">Đăng xuất</button>
+</div></header>
+
+<main class="wrap">
+  <div id="login" class="card login hide">
+    <div style="font-size:42px">🔐</div>
+    <h2 style="margin:8px 0">Đăng nhập chủ trang</h2>
+    <p class="muted small">Chỉ tài khoản Google của chủ trang mới vào được.</p>
+    <button class="btn pri big" id="gLogin">Đăng nhập bằng Google</button>
+    <div id="loginMsg" class="note bad hide"></div>
+  </div>
+
+  <div id="appBox" class="adm hide">
+    <nav class="side" id="nav">
+      <button data-p="dash" class="on">📊 Tổng quan</button>
+      <button data-p="visits">👀 Lượt truy cập</button>
+      <button data-p="flashes">⚡ Lượt nạp</button>
+      <button data-p="boards">🔌 Mạch đã nạp</button>
+      <button data-p="codes">🔑 Mã Pro</button>
+      <button data-p="projects">📦 Dự án & firmware</button>
+      <button data-p="settings">⚙️ Cài đặt</button>
+    </nav>
+    <section>
+      <div data-panel="dash"></div>
+      <div data-panel="visits" class="hide"></div>
+      <div data-panel="flashes" class="hide"></div>
+      <div data-panel="boards" class="hide"></div>
+      <div data-panel="codes" class="hide"></div>
+      <div data-panel="projects" class="hide"></div>
+      <div data-panel="settings" class="hide"></div>
+    </section>
+  </div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/spark-md5@3.0.2/spark-md5.min.js"></script>
+<script type="module" src="js/admin.js?v=9"></script>
+</body>
+</html>
