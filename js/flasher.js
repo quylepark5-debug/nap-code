@@ -13,6 +13,8 @@ import { loadOptions, renderOptions, checkOptions, buildConfig, attachConfig } f
 const $ = (id) => document.getElementById(id);
 let siteCfg = {};
 let projects = [], cur = null, codeInfo = null, busy = false, uid = null;
+let limitCfg = null, credit = false, cdTimer = 0;   // gioi han nap ban thuong; credit = da tru 1 luot nhung chua nap xong (Thu lai khong tru them)
+const fwCache = {};                              // firmware da tai trong lan mo trang nay -> nap mach khac khong tai lai
 let unlocked = null; // ma da kich hoat trong lan mo trang nay -> "Thu lai" khong tinh them luot
 
 const md5u8 = (u8) => SparkMD5.ArrayBuffer.hash(u8.buffer.slice(u8.byteOffset, u8.byteOffset + u8.byteLength));
@@ -29,6 +31,7 @@ if (!("serial" in navigator)) $("noSerial").classList.remove("hide");
   } catch (e) { console.warn("auth", e); }
   logVisit();
   loadContact();
+  loadLimit();
   await loadProjects();
 })();
 
@@ -51,6 +54,57 @@ async function loadContact() {
     renderContact(c);
   } catch (e) { console.warn("contact", e); renderContact({}); }
 }
+// ---------- Gioi han nap ban thuong (chu trang chinh trong trang quan ly) ----------
+async function loadLimit() {
+  try { limitCfg = (await getDoc(doc(db, "config", "limit"))).data() || null; } catch { limitCfg = null; }
+  if (tier() === "free") showQuota();
+}
+const limOn = () => !!(limitCfg && limitCfg.on && limitCfg.n > 0 && limitCfg.mins > 0);
+const hrs = (m) => m % 60 ? m + " phút" : (m / 60) + " giờ";
+async function quotaState() {
+  if (!limOn() || !uid) return { ok: true, left: Infinity };
+  let q = null;
+  try { q = (await getDoc(doc(db, "quota", uid))).data() || null; } catch {}
+  const win = limitCfg.mins * 60000, now = Date.now(), st = q?.start?.toMillis?.() || 0;
+  if (!q || now >= st + win) return { ok: true, left: limitCfg.n, fresh: true };
+  const left = limitCfg.n - (q.n || 0);
+  return { ok: left > 0, left: Math.max(0, left), resetAt: st + win };
+}
+async function consumeQuota(qs) {
+  if (!limOn()) return;
+  const ref = doc(db, "quota", uid);
+  if (qs.fresh) await setDoc(ref, { start: serverTimestamp(), n: 1, at: serverTimestamp() });
+  else await updateDoc(ref, { n: increment(1), at: serverTimestamp() });
+}
+async function showQuota() {
+  const box = $("quotaBox");
+  clearInterval(cdTimer);
+  if (tier() !== "free" || !limOn() || busy) { box.classList.add("hide"); return; }
+  const qs = await quotaState();
+  if (tier() !== "free") return;
+  const L = limitCfg;
+  if (qs.ok || credit) {
+    box.className = "quota tiny";
+    box.innerHTML = credit ? "" : `Bản thường: còn <b>${qs.left}/${L.n}</b> lượt nạp trong ${hrs(L.mins)}.`;
+    $("go").disabled = false;
+    return;
+  }
+  const pro = proOn(cur);
+  box.className = "quota note warn";
+  const tick = () => {
+    const ms = qs.resetAt - Date.now();
+    if (ms <= 0) { clearInterval(cdTimer); showQuota(); return; }
+    const t = Math.ceil(ms / 1000), h = Math.floor(t / 3600), m = Math.floor(t % 3600 / 60), sec = t % 60;
+    const clk = (h ? h + ":" + String(m).padStart(2, "0") : m) + ":" + String(sec).padStart(2, "0");
+    box.innerHTML = `⏳ Bạn đã dùng hết <b>${L.n}/${L.n}</b> lượt nạp bản thường trong ${hrs(L.mins)}.
+      <div class="cd">${clk}</div><div>Hết giờ đếm ngược là nạp tiếp được.</div>
+      <div class="upsell">${pro ? `💎 Cần nạp nhiều mạch hoặc dùng thêm tính năng? <b>Bản Pro</b> không giới hạn lượt theo giờ, có tiếng Việt, đồng hồ + thời tiết, ảnh nền… <a href="#" id="toPro">Xem bản Pro</a>` : "💬 Cần nạp nhiều mạch cùng lúc? Liên hệ mình ở cuối trang nhé."}</div>`;
+    const tp = $("toPro"); if (tp) tp.onclick = (e) => { e.preventDefault(); setTier("pro"); $("code").focus(); };
+  };
+  tick(); cdTimer = setInterval(tick, 1000);
+  $("go").disabled = true;
+}
+
 function renderContact(c) {
   const tt = (c.tiktok || BRAND.handle).replace(/^@/, "");
   const list = [];
@@ -118,6 +172,7 @@ function pick(id, scroll) {
   $("noTier").classList.toggle("hide", hasF || hasP);
   clearTier();
   $("done").classList.add("hide"); $("run").classList.add("hide"); $("go").classList.remove("hide");
+  credit = false;
   codeInfo = null; $("code").value = ""; $("codeMsg").classList.add("hide"); $("proGet").classList.remove("hide");
   showFit();
   hasOpts = false;
@@ -138,6 +193,7 @@ function clearTier() {
   $("infoSec").classList.add("hide");
   $("optBox").classList.add("hide");
   $("proWait").classList.add("hide");
+  $("quotaBox").classList.add("hide"); clearInterval(cdTimer);
   $("reqCard").open = true;
   $("dlBox").classList.add("hide");
   shownTier = null;
@@ -167,10 +223,12 @@ function showTier(t) {
   if (hasOpts) renderOptions($("optForm"), t, proOn(cur));
   $("go").disabled = false;
   $("go").innerHTML = $("go").dataset.label || goText;
+  showQuota();
 }
 // Chon Pro nhung chua co ma: an het thong so
 function lockPro() {
   shownTier = null;
+  showQuota();
   $("dlBox").classList.add("hide");
   $("proWait").classList.remove("hide");
   $("infoSec").classList.add("hide");
@@ -272,6 +330,8 @@ function prog(p, s) { $("bar").style.width = (p * 100).toFixed(1) + "%"; $("pct"
 class Fail extends Error { constructor(msg, stage) { super(msg); this.stage = stage; } }
 
 async function download(t, onP) {
+  const key = `${cur.id}:${t}:${cur[t].ver || ""}:${cur[t].parts.map((p) => p.md5 || p.size).join(",")}`;
+  if (fwCache[key]) { onP(1); return fwCache[key].map((f) => ({ data: f.data, address: f.address })); }
   const parts = cur[t].parts, out = [];
   const total = parts.reduce((a, p) => a + p.chunks, 0); let n = 0;
   for (let i = 0; i < parts.length; i++) {
@@ -285,7 +345,8 @@ async function download(t, onP) {
     if (off !== p.size || (p.md5 && md5u8(buf) !== p.md5)) throw new Fail("Firmware tải về bị lỗi, thử lại", "tải");
     out.push({ data: buf, address: p.offset });
   }
-  return out;
+  fwCache[key] = out;
+  return out.map((f) => ({ data: f.data, address: f.address }));
 }
 
 $("go").onclick = async () => {
@@ -299,6 +360,12 @@ $("go").onclick = async () => {
   if (optErr) { $("optBox").open = true; $("optMsg").scrollIntoView({ behavior: "smooth", block: "center" }); return; }
   let cfgBlob = null;
   try { cfgBlob = useOpt ? buildConfig($("optForm"), t) : null; } catch (e) { $("optMsg").textContent = e.message; $("optMsg").classList.remove("hide"); return; }
+
+  let qs = { ok: true };
+  if (t === "free" && limOn() && !credit) {
+    qs = await quotaState();
+    if (!qs.ok) { showQuota(); return; }
+  }
 
   let port;
   if (savedPort) port = savedPort;                 // da kiem tra mach -> dung lai cong do, khong hoi lai
@@ -339,6 +406,12 @@ $("go").onclick = async () => {
       log(`Đã dùng mã: ${codeInfo.uses}/${max} lần`);
     }
 
+    if (t === "free" && limOn() && !credit) {
+      rec.stage = "lượt nạp";
+      try { await consumeQuota(qs); } catch (e) { throw new Fail("Đã hết lượt nạp bản thường trong khung giờ này. Đợi hết đếm ngược rồi nạp tiếp.", "lượt nạp"); }
+      credit = true;
+    }
+
     rec.stage = "tải";
     const files = attachConfig(await download(t, (p) => prog(0.03 + p * 0.12, "Đang tải firmware…")), cfgBlob);
     if (cfgBlob) log("Ghi kèm cấu hình tùy chỉnh của bạn");
@@ -362,8 +435,10 @@ $("go").onclick = async () => {
     $("done").innerHTML = `<div class="ic">🎉</div><h3>Nạp thành công!</h3>
       <p class="muted small">Mạch đang khởi động lại. Nếu màn hình chưa sáng, nhấn nút <b>RST</b> một lần.</p>
       ${t === "pro" ? `<p class="pill pro">Mã Pro còn ${Math.max(0, (codeInfo.maxUses || MAX_USES) - codeInfo.uses)}/${codeInfo.maxUses || MAX_USES} lần nạp</p><br><br>` : ""}
-      <button class="btn" onclick="location.reload()">Nạp mạch khác</button>`;
+      <button class="btn pri" id="again">🔁 Nạp mạch khác</button>`;
     $("done").classList.remove("hide");
+    credit = false;
+    $("again").onclick = nextBoard;
   } catch (e) {
     rec.err = String(e?.message || e).slice(0, 300);
     if (e instanceof Fail) rec.stage = e.stage;
@@ -372,12 +447,22 @@ $("go").onclick = async () => {
     $("done").innerHTML = `<div class="ic">⚠️</div><h3>Chưa nạp được</h3><p class="note bad">${esc(e instanceof Fail ? e.message : "Lỗi khi " + rec.stage + ": " + rec.err)}</p>
       <button class="btn" id="retry">Thử lại</button>`;
     $("done").classList.remove("hide");
-    $("retry").onclick = () => { $("done").classList.add("hide"); $("run").classList.add("hide"); $("go").classList.remove("hide"); };
+    $("retry").onclick = () => { $("done").classList.add("hide"); $("run").classList.add("hide"); $("go").classList.remove("hide"); showQuota(); };
   } finally {
     try { await transport.disconnect(); } catch {}
     busy = false;
     lockEls.forEach((e) => e.disabled = false);
+    if (!rec.ok) showQuota();
     rec.ms = Date.now() - t0;
     if (uid) addDoc(collection(db, "flashes"), { ...rec, uid, at: serverTimestamp() }).catch((e) => console.warn("flash log", e));
   }
 };
+
+// Nap mach tiep theo ngay tren trang: giu du an, phien ban, tuy chinh va firmware da tai
+function nextBoard() {
+  $("done").classList.add("hide"); $("run").classList.add("hide"); $("go").classList.remove("hide");
+  chipInfo = null; savedPort = null; showFit();
+  prog(0, "Chuẩn bị…");
+  $("flashSec").scrollIntoView({ behavior: "smooth", block: "start" });
+  showQuota();
+}

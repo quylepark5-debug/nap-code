@@ -7,7 +7,7 @@
 <meta name="description" content="Nạp firmware cho mạch ESP32 ngay trên trình duyệt, không cần cài phần mềm.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=11">
+<link rel="stylesheet" href="css/style.css?v=12">
 </head>
 <body>
 <header class="top"><div class="wrap">
@@ -75,6 +75,7 @@
         <input type="checkbox" id="erase"> Xoá sạch bộ nhớ trước khi nạp (mất GIF, cài đặt cũ)</label>
 
       <div style="margin-top:16px"><button class="btn pri big" id="go">⚡ Kết nối mạch &amp; nạp</button></div>
+      <div id="quotaBox" class="hide"></div>
       <div id="run" class="hide">
         <div class="prog"><i id="bar"></i></div>
         <div class="stage"><span id="stage">Chuẩn bị…</span><span id="pct">0%</span></div>
@@ -129,6 +130,6 @@
 </div></footer>
 
 <script src="https://cdn.jsdelivr.net/npm/spark-md5@3.0.2/spark-md5.min.js"></script>
-<script type="module" src="js/flasher.js?v=11"></script>
+<script type="module" src="js/flasher.js?v=12"></script>
 </body>
 </html>

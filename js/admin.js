@@ -425,6 +425,16 @@ function settings() {
         ${f("otherName", "Liên hệ khác: tên nút", "Shopee")}${f("other", "Liên hệ khác: link")}
       </div>
       <button class="btn pri" id="sSave">Lưu</button></div>
+    <div class="card" style="margin-top:12px"><h3 style="font-size:16px">Giới hạn nạp bản thường</h3>
+      <p class="muted small" style="margin:4px 0 10px">Mỗi máy (trình duyệt) của khách chỉ nạp được số lần này trong khung giờ. Hết lượt, trang hiện đồng hồ đếm ngược và gợi ý bản Pro. Bản Pro không bị giới hạn. Nạp lỗi bấm "Thử lại" không bị trừ thêm.</p>
+      <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:end">
+        <label class="small" style="display:flex;gap:8px;align-items:center;cursor:pointer;margin-bottom:10px"><input type="checkbox" id="lOn"> Bật giới hạn</label>
+        <label class="field" style="width:120px"><span>Số lần nạp</span><input type="number" id="lN" min="1" max="100" value="5"></label>
+        <label class="field" style="width:160px"><span>Trong</span><select id="lM">
+          ${[[30, "30 phút"], [60, "1 giờ"], [120, "2 giờ"], [180, "3 giờ"], [360, "6 giờ"], [720, "12 giờ"], [1440, "1 ngày"]].map(([v, l]) => `<option value="${v}">${l}</option>`).join("")}</select></label>
+        <button class="btn pri" id="lSave" style="margin-bottom:10px">Lưu</button>
+      </div>
+      <div class="tiny" id="lMsg"></div></div>
     <div class="card" style="margin-top:12px"><h3 style="font-size:16px">Ảnh nền đồng hồ theo ngày <span class="pill pro">Bản Pro</span></h3>
       <p class="muted small" style="margin:4px 0 10px">Đăng tối đa 14 ảnh. Mỗi ngày máy khách tự tải 1 ảnh về làm nền màn đồng hồ, lần lượt theo thứ tự (hết vòng thì lặp lại). Ảnh tự cắt vừa 320×240. Khách vẫn đặt được ảnh riêng hoặc nền có sẵn.</p>
       <div id="bgGrid" class="bggrid"><div class="tiny">Đang tải…</div></div>
@@ -472,6 +482,20 @@ function settings() {
   $("sSave").onclick = async () => {
     const d = {}; ["zalo", "zaloName", "facebook", "facebookName", "tiktok", "otherName", "other"].forEach((k) => d[k] = $("s_" + k).value.trim());
     await setDoc(doc(db, "config", "site"), d, { merge: true }); Object.assign(D.config, d); toast("Đã lưu liên hệ");
+  };
+  // ----- Gioi han nap ban thuong -----
+  getDoc(doc(db, "config", "limit")).then((d) => {
+    const L = d.data() || { on: false, n: 5, mins: 60 };
+    $("lOn").checked = !!L.on; $("lN").value = L.n || 5; $("lM").value = String(L.mins || 60);
+    $("lMsg").textContent = L.on ? `Đang bật: ${L.n} lần / ${$("lM").selectedOptions[0]?.text}` : "Đang tắt";
+  }).catch(() => { $("lMsg").textContent = "Chưa đọc được (đã dán luật Firebase mới chưa?)"; });
+  $("lSave").onclick = async () => {
+    const n = Math.max(1, Math.min(100, Math.round(Number($("lN").value) || 5))), mins = parseInt($("lM").value, 10);
+    try {
+      await setDoc(doc(db, "config", "limit"), { on: $("lOn").checked, n, mins, updatedAt: serverTimestamp() });
+      $("lMsg").textContent = $("lOn").checked ? `Đang bật: ${n} lần / ${$("lM").selectedOptions[0].text}` : "Đang tắt";
+      toast("Đã lưu giới hạn nạp");
+    } catch (e) { toast("Lỗi lưu: " + e.message); }
   };
   $("sCopy").onclick = () => { navigator.clipboard.writeText(siteUrl()); toast("Đã chép link"); };
   wireBrand();
