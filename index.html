@@ -7,7 +7,7 @@
 <meta name="description" content="Nạp firmware cho mạch ESP32 ngay trên trình duyệt, không cần cài phần mềm.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=29">
+<link rel="stylesheet" href="css/style.css?v=30">
 </head>
 <body>
 <div id="pageBg" class="page-bg hide"></div>
@@ -142,7 +142,16 @@
   <div class="pm card">
     <div style="display:flex;align-items:center;gap:10px"><h2 style="flex:1;font-size:21px">💎 Bản Pro</h2><button class="btn sm ghost" id="pmX" type="button">✕</button></div>
     <ul class="pm-feat" id="pmFeat"></ul>
+    <div class="small muted" id="pmPick" style="margin:10px 0 2px">Chọn gói để hiện mã QR chuyển khoản:</div>
     <div class="packs" id="pmPacks"></div>
+    <div id="pmPay" class="pm-pay hide">
+      <img id="pmQr" alt="Mã QR chuyển khoản">
+      <div class="small" style="line-height:1.7">
+        <div>Gói: <b id="pmPName"></b> · <b id="pmPPrice" style="color:var(--pro)"></b></div>
+        <div>Nội dung chuyển khoản: <span class="pm-ref" id="pmRef"></span> <button class="btn sm" id="pmCopy" type="button">Chép</button></div>
+        <div class="muted" style="margin-top:6px">Chuyển xong, nhắn mình ảnh chụp giao dịch + nội dung trên qua Zalo/Facebook bên dưới để nhận mã Pro.</div>
+      </div>
+    </div>
     <div class="pm-notes"><b>Lưu ý</b><ul id="pmNotes"></ul></div>
     <div class="small" style="margin:12px 0 6px">Liên hệ để mua mã:</div>
     <div class="contact" data-contact></div>
@@ -168,6 +177,6 @@
 
 <script src="https://cdn.jsdelivr.net/npm/spark-md5@3.0.2/spark-md5.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" defer></script>
-<script type="module" src="js/flasher.js?v=29"></script>
+<script type="module" src="js/flasher.js?v=30"></script>
 </body>
 </html>

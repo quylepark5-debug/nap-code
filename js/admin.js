@@ -332,7 +332,7 @@ function editProject(id) {
     <div class="tiny">${p[t]?.parts?.length ? `Đang có: ${esc(p[t].ver)} · ${p[t].parts.map((x) => `${esc(x.name)} @${hex(x.offset)} (${Math.round(x.size / 1024)} KB)`).join(", ")} · ${fmtTime(p[t].updatedAt)}` : "Chưa có firmware"}</div>
     <div class="grid2">
       <label class="field"><span>Phiên bản</span><input type="text" data-k="ver" value="${esc(p[t]?.ver || "")}" placeholder="vd: gif2"></label>
-      <label class="field"><span>Tính năng (mỗi dòng 1 ý)</span><textarea data-k="features">${esc((p[t]?.features || []).join("\n"))}</textarea></label>
+      <label class="field"><span>Tính năng (mỗi dòng 1 ý) <a href="#" data-feat="${t}" style="color:var(--pro)">📋 Dùng mô tả soạn sẵn</a></span><textarea data-k="features" style="min-height:120px">${esc((p[t]?.features || []).join("\n"))}</textarea></label>
     </div>
 
     <label class="field"><span>File firmware (.bin) — chọn cùng lúc 1 file merged, hoặc 4 file: bootloader, partitions, boot_app0, ino.bin</span>
@@ -416,6 +416,17 @@ function editProject(id) {
     await deleteDoc(doc(db, "projects", id)); editId = null; await loadAll(); projects();
   };
   if (id) document.querySelectorAll("[data-tier]").forEach((box) => wireTier(box, id, box.dataset.tier));
+  // Mo ta tinh nang Claude soan san (huong-dan/<id>/gioi-thieu.json) -> dien vao o, bam Luu de ap dung
+  document.querySelectorAll("[data-feat]").forEach((a) => a.onclick = async (e) => {
+    e.preventDefault();
+    try {
+      const g = await (await fetch(`huong-dan/${id}/gioi-thieu.json?t=${Date.now()}`)).json();
+      const list = g?.[a.dataset.feat]?.features;
+      if (!list?.length) return toast("Chưa có mô tả soạn sẵn cho bản này");
+      a.closest("[data-tier]").querySelector('[data-k="features"]').value = list.join("\n");
+      toast("Đã điền, bấm ⬆ Lưu của bản này để áp dụng");
+    } catch { toast("Chưa có mô tả soạn sẵn cho dự án này"); }
+  });
   if (id) $("eStudio").onclick = () => openStudio(p, async () => { await loadAll(); toast("Đã lưu nội dung, trang khách cập nhật ngay"); });
   // Nut Sua: file da co -> mo trinh sua; chua co -> mo trang tao file moi
   document.querySelectorAll("[data-gh]").forEach(async (a) => {
@@ -522,8 +533,8 @@ function settings() {
           <img id="dPv" alt="" style="width:200px;height:200px;object-fit:contain;background:#fff;border-radius:12px;padding:8px;display:block"></div>
       </div></div>
     <div class="card" style="margin-top:12px"><h3 style="font-size:16px">Gói mã Pro (bảng giá hiện khi khách chọn bản Pro)</h3>
-      <p class="muted small" style="margin:4px 0 10px">Mỗi gói: tên, số lần nạp, giá (ghi tự do, vd "59k"), ghi chú ngắn. Tick ⭐ để làm nổi gói đó. Khi tạo mã, chọn gói là tự điền số lần nạp. Không có gói nào = trang chỉ ghi "5 lần nạp".</p>
-      <div class="pkrow tiny muted"><span>Tên gói</span><span>Số lần</span><span>Giá</span><span class="pk-nt">Ghi chú</span><span>⭐</span><span></span></div>
+      <p class="muted small" style="margin:4px 0 10px">Mỗi gói: tên, số mạch, giá (ghi tự do, vd "59k"), ghi chú ngắn, ảnh <b>QR chuyển khoản</b> đã điền sẵn số tiền (khách chọn gói nào thì hiện QR gói đó). Tick ⭐ để làm nổi gói đó. Khi tạo mã, chọn gói là tự điền số lần nạp. Không có gói nào = trang chỉ ghi "5 lần nạp".</p>
+      <div class="pkrow tiny muted"><span>Tên gói</span><span>Số mạch</span><span>Giá</span><span class="pk-nt">Ghi chú</span><span>⭐</span><span></span><span>QR</span></div>
       <div id="pkList"></div>
       <label class="field" style="margin-top:10px"><span>Lưu ý cố định trong bảng giá Pro (mỗi dòng 1 ý, luôn hiện dù đổi gói). Để trống = dùng lưu ý mặc định</span>
         <textarea id="pkNotes" style="min-height:96px" placeholder="Mỗi mã nạp được số mạch theo gói. Nạp lại cho mạch đã nạp không tính thêm.&#10;Bản quyền gắn với từng mạch, không chuyển sang mạch khác được.&#10;Liên hệ để nhận mã sau khi thanh toán. Mã đã kích hoạt không hoàn tiền.">${esc(D.config.packNotes || "")}</textarea></label>
@@ -696,14 +707,29 @@ function settings() {
     } catch (e) { toast("Lỗi lưu: " + e.message); }
   };
   // ----- Goi ma Pro -----
-  const pkRow = (x = {}) => `<div class="pkrow"><input type="text" class="pk-nm" value="${esc(x.name || "")}" placeholder="Gói cơ bản" maxlength="30">
+  const pkRow = (x = {}) => `<div class="pkrow" data-q="${esc(x.q || Math.random().toString(36).slice(2, 10))}"><input type="text" class="pk-nm" value="${esc(x.name || "")}" placeholder="Gói cơ bản" maxlength="30">
     <input type="number" class="pk-us" value="${x.uses || ""}" min="1" max="50" placeholder="5">
     <input type="text" class="pk-pr" value="${esc(x.price || "")}" placeholder="59k" maxlength="20">
     <input type="text" class="pk-nt" value="${esc(x.note || "")}" placeholder="Cho 1–2 mạch" maxlength="60">
-    <input type="checkbox" class="pk-hot" ${x.hot ? "checked" : ""}><button class="btn sm danger pk-del" type="button">✕</button></div>`;
+    <input type="checkbox" class="pk-hot" ${x.hot ? "checked" : ""}><button class="btn sm danger pk-del" type="button">✕</button>
+    <label class="pk-qr" title="Ảnh QR chuyển khoản của gói này (đã điền sẵn số tiền)"><img alt=""><span>＋ QR</span><input type="file" accept="image/*" hidden></label></div>`;
+  const pkQr = {};                                   // q -> anh QR (dataURL) dang co / vua chon
+  const pkQrLoad = getDoc(doc(db, "config", "packqr")).then((d) => Object.assign(pkQr, d.data() || {})).catch(() => {});
   const pkDraw = (list) => {
     $("pkList").innerHTML = list.map(pkRow).join("");
     $("pkList").querySelectorAll(".pk-del").forEach((b) => b.onclick = () => b.closest(".pkrow").remove());
+    $("pkList").querySelectorAll(".pkrow").forEach((r) => {
+      const q = r.dataset.q, img = r.querySelector(".pk-qr img"), sp = r.querySelector(".pk-qr span");
+      const show = () => { if (pkQr[q]) { img.src = pkQr[q]; img.style.display = "block"; sp.textContent = "Đổi"; } };
+      pkQrLoad.then(show);
+      r.querySelector(".pk-qr input").onchange = async (e) => {
+        const f = e.target.files[0]; if (!f) return;
+        const im = await createImageBitmap(f), k = Math.min(1, 480 / Math.max(im.width, im.height));
+        const c = document.createElement("canvas"); c.width = Math.round(im.width * k); c.height = Math.round(im.height * k);
+        const g = c.getContext("2d"); g.fillStyle = "#fff"; g.fillRect(0, 0, c.width, c.height); g.drawImage(im, 0, 0, c.width, c.height);
+        pkQr[q] = c.toDataURL("image/jpeg", 0.9); show(); toast("Bấm Lưu gói để đăng QR");
+      };
+    });
   };
   pkDraw(D.config.packs || []);
   $("pkAdd").onclick = () => pkDraw([...pkRead(true), {}]);
@@ -713,12 +739,16 @@ function settings() {
     { name: "Gói thợ", uses: 20, price: "199k", note: "Cho người lắp bán lại" },
   ]);
   const pkRead = (all) => [...$("pkList").querySelectorAll(".pkrow")].map((r) => ({
+    q: r.dataset.q,
     name: r.querySelector(".pk-nm").value.trim(), uses: Math.max(0, Math.min(50, parseInt(r.querySelector(".pk-us").value, 10) || 0)),
     price: r.querySelector(".pk-pr").value.trim(), note: r.querySelector(".pk-nt").value.trim(), hot: r.querySelector(".pk-hot").checked,
   })).filter((x) => all || (x.name && x.uses));
   $("pkSave").onclick = async () => {
     const packs = pkRead();
     const packNotes = $("pkNotes").value.trim().slice(0, 1500);
+    const qr = {}; packs.forEach((x) => { if (pkQr[x.q]) qr[x.q] = pkQr[x.q]; });
+    try { await setDoc(doc(db, "config", "packqr"), qr); } catch (e) { return toast("Lỗi lưu QR: " + e.message); }
+    packs.forEach((x) => x.hasQr = !!qr[x.q]);
     try { await setDoc(doc(db, "config", "site"), { packs, packNotes }, { merge: true }); D.config.packs = packs; D.config.packNotes = packNotes; pkDraw(packs); toast("Đã lưu " + packs.length + " gói + lưu ý"); }
     catch (e) { toast("Lỗi lưu: " + e.message); }
   };

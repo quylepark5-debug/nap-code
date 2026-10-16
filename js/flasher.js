@@ -162,13 +162,32 @@ const pmShown = new Set();
 function openProModal() {
   const c = siteCfg || {}, ps = (c.packs || []).filter((x) => x && x.name && x.uses > 0);
   $("pmFeat").innerHTML = (cur?.pro?.features || []).map((x) => `<li>${esc(x)}</li>`).join("");
-  $("pmPacks").innerHTML = ps.length ? ps.map((x) => `<div class="pack ${x.hot ? "hot" : ""}">${x.hot ? '<span class="tag">Nhiều người chọn</span>' : ""}
+  $("pmPacks").innerHTML = ps.length ? ps.map((x, i) => `<div class="pack ${x.hot ? "hot" : ""}" data-i="${i}" role="button" tabindex="0"><span class="pick"></span>${x.hot ? '<span class="tag">Nhiều người chọn</span>' : ""}
     <div class="nm">${esc(x.name)}</div><div class="pr">${esc(x.price || "Liên hệ")}</div>
     <div class="us"><b>${x.uses}</b> mạch</div>${x.note ? `<div class="nt">${esc(x.note)}</div>` : ""}</div>`).join("")
     : '<div class="note" style="grid-column:1/-1">Liên hệ để biết giá và nhận mã.</div>';
+  $("pmPick").classList.toggle("hide", !ps.some((x) => x.hasQr));
+  $("pmPay").classList.add("hide");
+  $("pmPacks").querySelectorAll(".pack").forEach((el) => {
+    const pick = () => pickPack(ps[+el.dataset.i], el);
+    el.onclick = pick; el.onkeydown = (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); pick(); } };
+  });
   const notes = (c.packNotes || "").split("\n").map((x) => x.trim()).filter(Boolean);
   $("pmNotes").innerHTML = (notes.length ? notes : PACK_NOTES_DEFAULT).map((x) => `<li>${esc(x)}</li>`).join("");
   $("proModal").classList.remove("hide");
+}
+// Khach chon goi -> hien QR chuyen khoan cua goi (chu trang tao san, da co so tien) + noi dung chuyen khoan de doi chieu
+let packQr = null;
+async function pickPack(x, el) {
+  $("pmPacks").querySelectorAll(".pack").forEach((e) => e.classList.toggle("sel", e === el));
+  if (!packQr) { try { packQr = (await getDoc(doc(db, "config", "packqr"))).data() || {}; } catch { packQr = {}; } }
+  const img = packQr[x.q];
+  if (!img) { $("pmPay").classList.add("hide"); return; }
+  const ref = ("TSL " + (cur?.id || "").replace(/[^a-z0-9]/gi, "").slice(0, 6) + " " + Math.random().toString(36).slice(2, 6)).toUpperCase();
+  $("pmQr").src = img; $("pmPName").textContent = x.name; $("pmPPrice").textContent = x.price || "";
+  $("pmRef").textContent = ref; $("pmPay").classList.remove("hide");
+  $("pmCopy").onclick = () => { navigator.clipboard?.writeText(ref); $("pmCopy").textContent = "Đã chép"; setTimeout(() => $("pmCopy").textContent = "Chép", 1500); };
+  $("pmPay").scrollIntoView({ behavior: "smooth", block: "nearest" });
 }
 const closeProModal = () => $("proModal").classList.add("hide");
 $("pmX").onclick = closeProModal;

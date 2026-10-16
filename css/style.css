@@ -435,3 +435,19 @@ footer{border-top:0}
 .pm-notes{margin-top:12px;padding:10px 14px;border-radius:12px;background:rgba(255,194,74,.06);border:1px dashed rgba(255,194,74,.35);font-size:13px}
 .pm-notes ul{margin:6px 0 0;padding-left:18px;color:var(--sub)}.pm-notes li{margin:3px 0}
 @media(max-width:560px){.pm-feat{grid-template-columns:1fr}}
+.pkrow{grid-template-columns:1.2fr .55fr .7fr 1.5fr auto auto 64px}
+.pk-qr{width:56px;height:40px;border:1px dashed var(--line2);border-radius:8px;display:grid;place-items:center;cursor:pointer;font-size:11px;color:var(--sub);position:relative;overflow:hidden;background:#fff1}
+.pk-qr img{display:none;position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#fff}
+.pk-qr span{position:relative;z-index:1;background:rgba(12,8,32,.7);padding:1px 4px;border-radius:4px}
+@media(max-width:700px){.pkrow{grid-template-columns:1fr 1fr}}
+/* Chon goi trong bang gia Pro */
+.pm .pack{cursor:pointer;transition:.15s}
+.pm .pack:hover{border-color:#6c5bc0}
+.pm .pack.sel{border-color:var(--a1);box-shadow:0 0 0 1.5px var(--a1),0 0 26px -10px var(--a1)}
+.pm .pack .pick{position:absolute;top:8px;right:8px;width:16px;height:16px;border-radius:50%;border:2px solid var(--line2)}
+.pm .pack.sel .pick{border-color:var(--a1);background:var(--a1);box-shadow:inset 0 0 0 3px var(--card)}
+.pm-pay{margin-top:12px;display:flex;gap:16px;align-items:center;padding:14px;border-radius:14px;background:rgba(45,226,230,.06);border:1px solid rgba(45,226,230,.3)}
+.pm-pay.hide{display:none}
+.pm-pay img{width:170px;height:170px;object-fit:contain;background:#fff;border-radius:10px;padding:6px;flex:0 0 auto}
+.pm-ref{white-space:nowrap;display:inline-block;font-family:ui-monospace,Consolas,monospace;font-weight:700;font-size:16px;letter-spacing:.04em;color:var(--pro);background:rgba(255,194,74,.1);padding:3px 8px;border-radius:6px}
+@media(max-width:560px){.pm-pay{flex-direction:column;text-align:center}}
