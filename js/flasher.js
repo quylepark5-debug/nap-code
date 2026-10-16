@@ -206,7 +206,7 @@ function pick(id, scroll) {
   showFit();
   hasOpts = false;
   const pid = cur.id;
-  loadOptions(pid).then((has) => {
+  loadOptions(cur).then((has) => {
     if (!cur || cur.id !== pid) return;
     hasOpts = has;
     if (tier() && !(tier() === "pro" && !codeInfo)) { $("optBox").classList.toggle("hide", !has); if (has) renderOptions($("optForm"), tier(), proOn(cur)); }

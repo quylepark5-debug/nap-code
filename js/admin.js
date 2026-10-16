@@ -5,6 +5,7 @@ import {
   serverTimestamp, Bytes, Timestamp, esc, fmtTime, hex, normCode,
 } from "./fb.js";
 import { guidePath, ghEdit, ghNew } from "./guides.js";
+import { openStudio } from "./studio.js";
 import { UI_FIELDS, uiOf, fmt } from "./giaodien.js";
 
 const $ = (id) => document.getElementById(id);
@@ -297,13 +298,7 @@ function editProject(id) {
       <label class="field"><span>Phiên bản</span><input type="text" data-k="ver" value="${esc(p[t]?.ver || "")}" placeholder="vd: gif2"></label>
       <label class="field"><span>Tính năng (mỗi dòng 1 ý)</span><textarea data-k="features">${esc((p[t]?.features || []).join("\n"))}</textarea></label>
     </div>
-    <div class="note" style="margin:6px 0 10px">📖 <b>Hướng dẫn & sơ đồ chân</b> nằm trên GitHub (thư mục <span class="mono">huong-dan/${esc(id)}/</span>). Bấm Sửa → sửa chữ → <b>Commit changes</b>. Trang nạp tự cập nhật sau khoảng 1 phút.
-      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">
-        <a class="btn sm" target="_blank" rel="noopener" data-gh="${esc(guidePath(id, t, "guide"))}">✏️ Sửa hướng dẫn</a>
-        <a class="btn sm" target="_blank" rel="noopener" data-gh="${esc(guidePath(id, t, "pins"))}">✏️ Sửa sơ đồ chân</a>
-        ${t === "free" ? `<a class="btn sm" target="_blank" rel="noopener" data-gh="huong-dan/${esc(id)}/tuy-chon.json" title="Các ô khách chỉnh trước khi nạp (dùng chung 2 bản)">⚙️ Sửa tùy chọn cho khách</a>` : ""}
-        <a class="btn sm ghost" target="_blank" rel="noopener" href="${esc(siteUrl())}#${esc(id)}">👁 Xem trên trang</a>
-      </div></div>
+
     <label class="field"><span>File firmware (.bin) — chọn cùng lúc 1 file merged, hoặc 4 file: bootloader, partitions, boot_app0, ino.bin</span>
       <input type="file" accept=".bin" multiple data-k="files"></label>
     <div class="parts" data-k="parts"></div>
@@ -336,6 +331,10 @@ function editProject(id) {
       <label class="small" style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="e_proOn" ${p.proOn !== false ? "checked" : ""}> Bật <b>Bản Pro</b></label>
     </div>
     <div class="tiny">Tắt một bản thì khách không thấy bản đó (firmware vẫn giữ, bật lại lúc nào cũng được).</div>
+    ${id ? `<div class="note" style="margin:12px 0 0;display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+      <div style="flex:1;min-width:220px">📖 <b>Hướng dẫn · sơ đồ chân · tùy chỉnh trước khi nạp</b><br><span class="tiny">Mở trình sửa: bên trái sửa, bên phải hiện y như trang khách thấy. Bấm vào chỗ nào bên phải là nhảy tới chỗ sửa.</span></div>
+      <button class="btn pri" id="eStudio">🎨 Sửa nội dung (xem như khách)</button>
+      <a class="btn ghost" target="_blank" rel="noopener" href="${esc(siteUrl())}#${esc(id)}">👁 Trang thật</a></div>` : ""}
     <div style="display:flex;gap:8px;margin-top:12px"><button class="btn pri" id="eSave">Lưu thông tin dự án</button>
       ${id ? '<button class="btn danger" id="eDel">Xoá dự án</button>' : ""}</div>
     ${id ? tierBox("free", "Bản thường (miễn phí)") + tierBox("pro", "Bản Pro (cần mã)") : '<p class="tiny">Lưu dự án trước, sau đó tải firmware lên.</p>'}
@@ -359,6 +358,7 @@ function editProject(id) {
     await deleteDoc(doc(db, "projects", id)); editId = null; await loadAll(); projects();
   };
   if (id) document.querySelectorAll("[data-tier]").forEach((box) => wireTier(box, id, box.dataset.tier));
+  if (id) $("eStudio").onclick = () => openStudio(p, async () => { await loadAll(); toast("Đã lưu nội dung, trang khách cập nhật ngay"); });
   // Nut Sua: file da co -> mo trinh sua; chua co -> mo trang tao file moi
   document.querySelectorAll("[data-gh]").forEach(async (a) => {
     const path = a.dataset.gh;

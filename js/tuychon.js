@@ -6,8 +6,11 @@ export const UCFG_ADDR = 0xF000;
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 let schema = null, projId = null;
 
-export async function loadOptions(id) {
+// p = du an (uu tien tuy chon chu trang sua trong trang quan ly), hoac ma du an
+export async function loadOptions(p) {
+  const id = typeof p === "string" ? p : p.id;
   projId = id; schema = null;
+  if (typeof p === "object" && Array.isArray(p.options) && p.options.length) { schema = p.options; return true; }
   try {
     const r = await fetch(`huong-dan/${id}/tuy-chon.json?t=${Math.floor(Date.now() / 60000)}`, { cache: "no-cache" });
     if (r.ok) schema = (await r.json()).options || null;
@@ -18,8 +21,11 @@ export async function loadOptions(id) {
 const store = (k, v) => { try { localStorage.setItem(`opt_${projId}_${k}`, JSON.stringify(v)); } catch {} };
 const recall = (k) => { try { const v = localStorage.getItem(`opt_${projId}_${k}`); return v == null ? undefined : JSON.parse(v); } catch { return undefined; } };
 
-// Ve form; tier = "free" | "pro" (muc Pro bi khoa khi chon ban thuong)
-export function renderOptions(box, tier, proAvail = true) {
+// Dung cho trang quan ly: xem truoc voi danh sach tuy chon dang sua
+export function setSchema(list, id) { schema = list; projId = id; }
+
+// Ve form; tier = "free" | "pro" (muc Pro bi khoa khi chon ban thuong); preview = khong doc/ghi gia tri da luu
+export function renderOptions(box, tier, proAvail = true, preview = false) {
   if (!schema) { box.innerHTML = ""; return; }
   // Ban thuong: an han cac muc Pro (chi ghi 1 dong "ban Pro co them...") cho form gon
   const proOnly = schema.filter((o) => o.tier === "pro");
@@ -27,7 +33,7 @@ export function renderOptions(box, tier, proAvail = true) {
     ? `<div class="opt-more tiny">Bản Pro có thêm: ${proOnly.map((o) => esc(o.label)).join(", ")}.</div>` : "";
   box.innerHTML = schema.filter((o) => o.tier !== "pro" || (proAvail && tier === "pro")).map((o) => {
     const lock = o.tier === "pro" && tier !== "pro";
-    const saved = o.type === "password" ? undefined : recall(o.key);
+    const saved = o.type === "password" || preview ? undefined : recall(o.key);
     const v = saved !== undefined ? saved : o.default;
     const id = "opt_" + o.key;
     const tag = o.tier === "pro" ? ' <span class="pill pro" style="padding:1px 7px">PRO</span>' : "";
@@ -50,14 +56,14 @@ export function renderOptions(box, tier, proAvail = true) {
     const save = () => {
       const val = o.type === "check" ? el.checked : el.value;
       if (o.type === "range") box.querySelector(`#opt_${o.key}_v`).textContent = val + (o.unit || "");
-      if (o.type !== "password") store(o.key, val);
+      if (o.type !== "password" && !preview) store(o.key, val);
     };
     el.addEventListener(o.type === "range" ? "input" : "change", save);
   });
   box.querySelectorAll(".pweye").forEach((b) => b.onclick = () => b.previousElementSibling.classList.toggle("show"));
   box.querySelector("#optReset").onclick = () => {
     schema.forEach((o) => { try { localStorage.removeItem(`opt_${projId}_${o.key}`); } catch {} });
-    renderOptions(box, tier, proAvail);
+    renderOptions(box, tier, proAvail, preview);
   };
 }
 

@@ -80,7 +80,7 @@ h1,h2,h3{margin:0;line-height:1.25}
 
 .field{display:block;margin:12px 0}
 .field>span{display:block;font-size:13px;color:var(--sub);margin-bottom:6px}
-input[type=text],input[type=email],input[type=number],textarea,select{width:100%;background:var(--bg);border:1px solid var(--line2);color:var(--txt);border-radius:11px;padding:11px 13px;font:inherit;font-size:15px;outline:none;transition:.15s}
+input:not([type]),input[type=text],input[type=email],input[type=number],textarea,select{width:100%;background:var(--bg);border:1px solid var(--line2);color:var(--txt);border-radius:11px;padding:11px 13px;font:inherit;font-size:15px;outline:none;transition:.15s}
 input:focus,textarea:focus,select:focus{border-color:var(--a1);box-shadow:0 0 0 3px rgba(34,211,238,.15)}
 textarea{min-height:80px;resize:vertical}
 .code-in{font-family:ui-monospace,Consolas,monospace;letter-spacing:.12em;font-size:18px;text-transform:uppercase;text-align:center}
@@ -167,7 +167,7 @@ footer{border-top:1px solid var(--line);margin-top:50px;padding:24px 0;color:var
   .btn.sm{padding:6px 9px;font-size:12.5px}
   .btn.big{padding:12px 16px;font-size:16px}
   /* o nhap giu 16px de iPhone khong tu phong to */
-  input[type=text],input[type=email],input[type=number],textarea,select{padding:8px 10px;font-size:16px;border-radius:9px}
+  input:not([type]),input[type=text],input[type=email],input[type=number],textarea,select{padding:8px 10px;font-size:16px;border-radius:9px}
   textarea{min-height:64px}
   .field{margin:8px 0}.field>span{font-size:12.5px;margin-bottom:4px}
   .toolbar{gap:8px;margin-bottom:10px}.toolbar h2{font-size:17px}
@@ -277,3 +277,31 @@ footer{border-top:1px solid var(--line);margin-top:50px;padding:24px 0;color:var
 @media(max-width:560px){.donate{flex-direction:column;text-align:center}}
 .don-mini{display:flex;gap:12px;align-items:center;justify-content:center;margin:12px auto 0;max-width:420px;text-align:left}
 .don-mini img{width:96px;height:96px;background:#fff;border-radius:10px;padding:5px}
+
+/* Trinh sua noi dung xem nhu khach */
+.studio{position:fixed;inset:0;z-index:50;background:var(--bg);display:flex;flex-direction:column}
+.st-top{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:10px 16px;border-bottom:1px solid var(--line);background:var(--bg2)}
+.st-name{font-size:15px}
+.st-seg{display:flex;background:var(--card);border:1px solid var(--line2);border-radius:10px;padding:3px;gap:2px}
+.st-seg button{all:unset;cursor:pointer;padding:6px 11px;border-radius:7px;font-size:13.5px;color:var(--sub);font-weight:600}
+.st-seg button.on{background:var(--card2);color:var(--txt);box-shadow:inset 0 -2px 0 var(--a1)}
+.st-body{flex:1;display:grid;grid-template-columns:1fr 1fr;min-height:0}
+.st-col{overflow:auto;padding:14px 16px;min-height:0}
+.st-ed{border-right:1px solid var(--line)}
+.st-pv{background:var(--bg)}
+.st-h{font-weight:700;font-size:13px;color:var(--sub);margin-bottom:10px;text-transform:none}
+.st-tools{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}
+.st-ta{width:100%;min-height:calc(100vh - 190px);font:14px/22px ui-monospace,Consolas,monospace;background:var(--bg2);color:var(--txt);border:1px solid var(--line2);border-radius:10px;padding:10px;resize:vertical;box-sizing:border-box}
+.st-pin{display:grid;grid-template-columns:1.1fr .9fr .9fr 1fr auto;gap:6px;margin-bottom:6px;align-items:center;border-radius:8px;padding:2px}
+.st-pin input{margin:0;min-width:0}
+.st-act{display:flex;gap:3px}
+.st-opt{border:1px solid var(--line2);border-radius:12px;padding:10px 12px;margin-bottom:10px;background:var(--bg2)}
+.st-opt-h{display:flex;gap:8px;align-items:center;margin-bottom:4px}
+.st-hl{outline:2px solid var(--pro)!important;outline-offset:3px;border-radius:6px;background:rgba(245,185,66,.08)}
+path.st-hl{outline:none!important;stroke-width:5;opacity:1}
+g.st-hl{outline:none!important}
+.st-pv [data-ln],.st-pv [data-i],.st-pv .opt{cursor:pointer}
+.st-pv [data-ln]:hover,.st-pv tr[data-i]:hover,.st-pv .opt:hover{background:rgba(34,211,238,.06);border-radius:6px}
+@media(max-width:900px){.st-body{grid-template-columns:1fr;grid-template-rows:1fr 1fr}.st-ed{border-right:0;border-bottom:1px solid var(--line)}.st-ta{min-height:40vh}
+  .st-pin{grid-template-columns:1fr 1fr}.st-act{grid-column:1/-1;justify-content:flex-end}}
+.st-pin input{padding:7px 9px;font-size:14px}

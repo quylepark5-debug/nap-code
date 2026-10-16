@@ -26,25 +26,28 @@ async function getText(path) {
 export async function loadGuide(project, tier) {
   const [guide, pins] = await Promise.all([
     getText(guidePath(project.id, tier, "guide")), getText(guidePath(project.id, tier, "pins"))]);
-  const t = project?.[tier] || {};
-  return { guide: guide || t.guide || "", pins: pins || t.pins || "" };
+  const t = project?.[tier] || {}, c = project?.content?.[tier] || {};
+  // Uu tien noi dung chu trang sua trong trang quan ly (Firestore), roi toi file tren GitHub
+  return { guide: c.guide || guide || t.guide || "", pins: c.pins || pins || t.pins || "" };
 }
 
 const escH = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const inline = (s) => escH(s).replace(/\*\*(.+?)\*\*/g, "<b>$1</b>");
 
 // Huong dan -> HTML
-export function guideHtml(text) {
-  const out = []; let list = null;
+export function guideHtml(text, mark = false) {
+  const out = []; let list = null, ln = -1;
+  const at = () => mark ? ` data-ln="${ln}"` : "";
   const close = () => { if (list) { out.push(`</${list}>`); list = null; } };
   for (const raw of String(text || "").split("\n")) {
+    ln++;
     const l = raw.trim();
     if (!l) { close(); continue; }
     let m;
-    if ((m = l.match(/^##\s+(.*)/))) { close(); out.push(`<h4>${inline(m[1])}</h4>`); }
-    else if ((m = l.match(/^\d+[.)]\s+(.*)/))) { if (list !== "ol") { close(); out.push("<ol>"); list = "ol"; } out.push(`<li>${inline(m[1])}</li>`); }
-    else if ((m = l.match(/^[-*•]\s+(.*)/))) { if (list !== "ul") { close(); out.push("<ul>"); list = "ul"; } out.push(`<li>${inline(m[1])}</li>`); }
-    else { close(); out.push(`<p>${inline(l)}</p>`); }
+    if ((m = l.match(/^##\s+(.*)/))) { close(); out.push(`<h4${at()}>${inline(m[1])}</h4>`); }
+    else if ((m = l.match(/^\d+[.)]\s+(.*)/))) { if (list !== "ol") { close(); out.push("<ol>"); list = "ol"; } out.push(`<li${at()}>${inline(m[1])}</li>`); }
+    else if ((m = l.match(/^[-*•]\s+(.*)/))) { if (list !== "ul") { close(); out.push("<ul>"); list = "ul"; } out.push(`<li${at()}>${inline(m[1])}</li>`); }
+    else { close(); out.push(`<p${at()}>${inline(l)}</p>`); }
   }
   close();
   return out.join("") || '<p class="tiny">Chưa có hướng dẫn.</p>';
@@ -76,10 +79,10 @@ export function pinsHtml(text, chip = "ESP32") {
     compSvg += `<rect x="${cx}" y="${y}" width="${cw}" height="${h}" rx="10" fill="#111a2e" stroke="${cCol[c]}" stroke-width="1.5"/>
       <text x="${cx + 12}" y="${y + 19}" fill="${cCol[c]}" font-size="13" font-weight="700">${escH(c)}</text>`;
     pr.forEach((r, i) => {
-      const py = y + 28 + i * RH + 11, col = wireColor(r.esp, cCol[c]);
-      compSvg += `<circle cx="${cx}" cy="${py}" r="4" fill="${col}"/><text x="${cx + 12}" y="${py + 4}" fill="#e8eef9" font-size="12">${escH(r.pin)}</text>`;
+      const py = y + 28 + i * RH + 11, col = wireColor(r.esp, cCol[c]), ri = rows.indexOf(r);
+      compSvg += `<g data-i="${ri}"><circle cx="${cx}" cy="${py}" r="4" fill="${col}"/><text x="${cx + 12}" y="${py + 4}" fill="#e8eef9" font-size="12">${escH(r.pin)}</text></g>`;
       const sy = espY[r.esp] + 11, mx = (ex + ew + cx) / 2;
-      lines += `<path d="M${ex + ew} ${sy} C${mx} ${sy} ${mx} ${py} ${cx} ${py}" fill="none" stroke="${col}" stroke-width="2" opacity=".85"/>`;
+      lines += `<path data-i="${ri}" d="M${ex + ew} ${sy} C${mx} ${sy} ${mx} ${py} ${cx} ${py}" fill="none" stroke="${col}" stroke-width="2" opacity=".85"/>`;
     });
     y += h + 12;
   }
@@ -95,7 +98,7 @@ export function pinsHtml(text, chip = "ESP32") {
 
   // --- Bang ---
   const table = `<table class="tbl pins"><tr><th>Linh kiện</th><th>Chân linh kiện</th><th>Nối vào ${escH(chip)}</th><th>Ghi chú</th></tr>
-    ${rows.map((r) => `<tr><td><span class="dot" style="background:${cCol[r.comp]}"></span>${escH(r.comp)}</td><td>${escH(r.pin)}</td>
+    ${rows.map((r, i) => `<tr data-i="${i}"><td><span class="dot" style="background:${cCol[r.comp]}"></span>${escH(r.comp)}</td><td>${escH(r.pin)}</td>
       <td class="mono" style="color:${wireColor(r.esp, "inherit")}">${escH(r.esp)}</td><td class="small muted">${escH(r.note)}</td></tr>`).join("")}</table>`;
   return `<div class="wire-wrap">${svg}</div>${table}
     <p class="tiny" style="margin-top:10px">Dây <span style="color:#f87171">đỏ</span> = nguồn, dây <span style="color:#8fa0bf">xám</span> = GND. Mỗi nút bấm nối 1 chân vào GPIO, chân còn lại xuống GND.</p>`;
