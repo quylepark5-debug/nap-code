@@ -8,6 +8,7 @@
 ## Nút bấm (3 nút)
 - **Nhấn B2**: màn sau, **nhấn B1**: màn trước: **GIF → Đồng hồ + thời tiết → Lịch** (chuyển ngay, không chờ)
 - Ở màn **Lịch**: **giữ B1** = tháng trước, **giữ B2** = tháng sau
+- Ở màn **Đồng hồ**: **nhấn B3** hoặc **giữ B2** = đổi sang ảnh nền khác, **giữ B1** = quay lại ảnh trước
 - **Nhấn B3 hai lần liền**: xem thông tin WiFi (bấm nút bất kỳ để tắt)
 - **Giữ B3** (khoảng 1 giây): vào **Cài đặt**
 - Trong Cài đặt: **B1** tăng, **B2** giảm (giữ để chạy nhanh), **B3** xuống mục dưới

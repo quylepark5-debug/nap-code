@@ -14,8 +14,8 @@ export const UI_DEFAULT = {
   contactTitle: "Liên hệ",
   contactSub: "Hỏi cách lắp mạch, góp ý hoặc báo lỗi",
   footer: "Trang ghi nhận lượt truy cập (loại máy, trình duyệt, quốc gia) và mã định danh của mạch khi nạp, để thống kê và hỗ trợ.\nFirmware thuộc bản quyền của @tapsualoa. Không sao chép, phát hành lại khi chưa được phép.",
-  color1: "#22d3ee",
-  color2: "#8b5cf6",
+  color1: "#2de2e6",
+  color2: "#ff4fa8",
 };
 
 // Ten o + nhan hien trong trang quan ly (thu tu = thu tu tren form)
