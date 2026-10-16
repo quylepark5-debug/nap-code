@@ -5,6 +5,7 @@ import {
   doc, getDoc, getDocs, updateDoc, setDoc, addDoc, collection, serverTimestamp, increment, arrayUnion, MAX_USES,
 } from "./fb.js";
 import { loadGuide, guideHtml, pinsHtml } from "./guides.js";
+import { downloadPins, downloadGuide } from "./taive.js";
 import { applyUI } from "./giaodien.js";
 import { identify, espDetails, checkFit } from "./chip.js";
 import { loadOptions, renderOptions, checkOptions, buildConfig, attachConfig } from "./tuychon.js";
@@ -138,6 +139,7 @@ function clearTier() {
   $("optBox").classList.add("hide");
   $("proWait").classList.add("hide");
   $("reqCard").open = true;
+  $("dlBox").classList.add("hide");
   shownTier = null;
   if (!goText) goText = $("go").dataset.label || $("go").innerHTML;
   $("go").disabled = true;
@@ -160,6 +162,7 @@ function showTier(t) {
   $("infoSec").classList.remove("hide");
   $("reqCard").open = false;
   if (shownTier !== t) { shownTier = t; renderInfo(t); }
+  $("dlBox").classList.toggle("hide", t !== "pro");
   $("optBox").classList.toggle("hide", !hasOpts);
   if (hasOpts) renderOptions($("optForm"), t, proOn(cur));
   $("go").disabled = false;
@@ -168,6 +171,7 @@ function showTier(t) {
 // Chon Pro nhung chua co ma: an het thong so
 function lockPro() {
   shownTier = null;
+  $("dlBox").classList.add("hide");
   $("proWait").classList.remove("hide");
   $("infoSec").classList.add("hide");
   $("reqCard").open = true;
@@ -209,12 +213,16 @@ $("chkBtn").onclick = async () => {
 };
 
 // ---------- Huong dan su dung + so do chan (theo ban dang xem) ----------
-let infoReq = 0;
+let infoReq = 0, lastInfo = null;
+// Ban Pro (da nhap ma): cho tai so do + huong dan ve may
+$("dlPins").onclick = () => lastInfo && downloadPins(lastInfo.g.pins, lastInfo.p, lastInfo.t);
+$("dlGuide").onclick = () => lastInfo && downloadGuide(lastInfo.g, lastInfo.p, lastInfo.t);
 async function renderInfo(t) {
   const req = ++infoReq, p = cur;
   $("guideBox").innerHTML = $("pinsBox").innerHTML = '<p class="tiny">Đang tải…</p>';
   const g = await loadGuide(p, t);
   if (req !== infoReq) return;                     // khach da doi du an / ban khac
+  lastInfo = { p, t, g };
   $("guideBox").innerHTML = guideHtml(g.guide);
   $("pinsBox").innerHTML = pinsHtml(g.pins, p.chip || "ESP32");
 }
