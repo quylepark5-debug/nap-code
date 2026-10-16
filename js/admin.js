@@ -519,12 +519,16 @@ function settings() {
       </div>
       <div class="tiny" id="lMsg"></div></div>
     <div class="card" style="margin-top:12px"><h3 style="font-size:16px">Ảnh nền đồng hồ theo ngày <span class="pill pro">Bản Pro</span></h3>
-      <p class="muted small" style="margin:4px 0 10px">Đăng tối đa 14 ảnh, hoặc bấm "Tự lấy 14 ảnh đẹp". Mỗi ngày máy khách tự tải 1 ảnh về làm nền màn đồng hồ, lần lượt theo thứ tự (hết vòng thì lặp lại). Ảnh tự cắt vừa 320×240. Khách vẫn đặt được ảnh riêng hoặc nền có sẵn.</p>
+      <p class="muted small" style="margin:4px 0 10px">Chọn nguồn ảnh bên dưới. Nếu dùng bộ ảnh riêng: đăng tối đa 14 ảnh, hoặc bấm "Tự lấy 14 ảnh đẹp". Mỗi ngày máy khách tự tải 1 ảnh về làm nền màn đồng hồ, lần lượt theo thứ tự (hết vòng thì lặp lại). Ảnh tự cắt vừa 320×240. Khách vẫn đặt được ảnh riêng hoặc nền có sẵn.</p>
+      <label class="field" style="max-width:520px"><span>Nguồn ảnh cho máy khách</span><select id="bgSrc">
+        <option value="auto">🌄 Ảnh tự động mỗi ngày (giống trang chủ Google, ngày nào cũng mới, không lặp lại)</option>
+        <option value="album">🖼 Bộ ảnh của bạn bên dưới (tối đa 14 ảnh, quay vòng)</option></select></label>
+      <div class="tiny" id="bgSrcNote" style="margin:-4px 0 10px"></div>
       <div id="bgGrid" class="bggrid"><div class="tiny">Đang tải…</div></div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;align-items:center">
         <label class="btn pri" style="cursor:pointer">＋ Thêm ảnh<input type="file" id="bgAdd" accept="image/*" multiple hidden></label>
         <button class="btn" id="bgAuto" type="button" title="Tự lấy ảnh phong cảnh đẹp, miễn phí bản quyền (Picsum/Unsplash)">🎲 Tự lấy 14 ảnh đẹp</button>
-        <label class="small" style="display:flex;gap:6px;align-items:center;cursor:pointer"><input type="checkbox" id="bgAutoOn"> Tự thay bộ ảnh mới mỗi 14 ngày</label>
+
         <span class="tiny" id="bgMsg"></span>
       </div></div>
     <div class="card" style="margin-top:12px"><div class="toolbar" style="margin:0 0 4px"><h3 style="font-size:16px;flex:1">Giao diện trang nạp</h3>
@@ -780,14 +784,18 @@ async function wireBgSet() {
     try { await setDoc(doc(db, "config", "bgset"), { autoAt: Date.now() }, { merge: true }); } catch {}
   };
   $("bgAuto").onclick = () => { if (!bgImgs.length || confirm("Thay toàn bộ ảnh hiện có bằng 14 ảnh mới?")) autoFill(); };
-  try {
-    const set = (await getDoc(doc(db, "config", "bgset"))).data() || {};
-    $("bgAutoOn").checked = !!set.auto;
-    // Da bat tu thay: qua 14 ngay ke tu lan lay truoc -> tu lay bo moi khi chu trang mo trang quan ly
-    if (set.auto && Date.now() - (set.autoAt || 0) > 14 * DAY) { toast("Đang tự thay bộ ảnh nền đồng hồ mới…"); autoFill(); }
-  } catch {}
-  $("bgAutoOn").onchange = async () => {
-    try { await setDoc(doc(db, "config", "bgset"), { auto: $("bgAutoOn").checked }, { merge: true }); toast($("bgAutoOn").checked ? "Đã bật tự thay ảnh" : "Đã tắt tự thay ảnh"); } catch (e) { toast("Lỗi: " + e.message); }
+  // Nguon anh: tu dong moi ngay (may tu tai tu Picsum) hoac bo anh cua chu trang
+  const srcNote = () => $("bgSrcNote").innerHTML = $("bgSrc").value === "auto"
+    ? "Mỗi ngày máy khách tự tải 1 ảnh phong cảnh mới (cùng ảnh với nền trang nạp hôm đó). Cần máy chạy firmware <b>gif5-pro</b> trở lên. Bộ ảnh bên dưới không dùng tới."
+    : "Máy khách lấy lần lượt từng ảnh trong bộ ảnh bên dưới, mỗi ngày 1 ảnh, hết thì quay vòng.";
+  try { const set = (await getDoc(doc(db, "config", "bgset"))).data() || {}; $("bgSrc").value = set.src === "auto" ? "auto" : "album"; } catch {}
+  srcNote();
+  $("bgSrc").onchange = async () => {
+    srcNote();
+    try {
+      await setDoc(doc(db, "config", "bgset"), { src: $("bgSrc").value, ver: Math.floor(Date.now() / 1000), n: bgImgs.length }, { merge: true });
+      toast($("bgSrc").value === "auto" ? "Máy khách sẽ tự lấy ảnh mới mỗi ngày" : "Máy khách dùng bộ ảnh của bạn");
+    } catch (e) { toast("Lỗi: " + e.message); }
   };
   $("bgAdd").onchange = async () => {
     const files = [...$("bgAdd").files].slice(0, BG_MAX - bgImgs.length);
