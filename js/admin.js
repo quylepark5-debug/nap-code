@@ -6,6 +6,7 @@ import {
 } from "./fb.js";
 import { guidePath, ghEdit, ghNew } from "./guides.js";
 import { openStudio } from "./studio.js";
+import { runChecks, codeStatus } from "./kiemtra.js";
 import { UI_FIELDS, uiOf, fmt } from "./giaodien.js";
 
 const $ = (id) => document.getElementById(id);
@@ -61,7 +62,7 @@ document.querySelectorAll("#nav button").forEach((b) => b.onclick = () => show(b
 function show(p) {
   document.querySelectorAll("#nav button").forEach((b) => b.classList.toggle("on", b.dataset.p === p));
   document.querySelectorAll("[data-panel]").forEach((e) => e.classList.toggle("hide", e.dataset.panel !== p));
-  ({ dash, visits, flashes, boards, codes, projects, feedback, settings, look: settings, sell: settings, device: settings })[p]();
+  ({ dash, visits, flashes, boards, codes, projects, feedback, check, settings, look: settings, sell: settings, device: settings })[p]();
 }
 
 async function loadAll() {
@@ -170,6 +171,28 @@ function flashes() {
 }
 
 // ---------- Mach da nap ----------
+// ---------- Kiem tra he thong (sau moi lan sua trang / dan luat Firebase) ----------
+async function check() {
+  const ico = (ok) => ok === true ? "✅" : ok === "info" ? "ℹ️" : "❌";
+  P("check").innerHTML = `<div class="toolbar"><h2>🩺 Kiểm tra hệ thống</h2><button class="btn pri sm" id="ckRun">↻ Kiểm tra lại</button></div>
+    <p class="muted small" style="margin:0 0 12px">Trang đóng vai một <b>khách mới</b> để thử: đọc được gì, bị chặn gì, mã Pro còn dùng được không. Không trừ lượt mã, không ghi gì lên máy chủ. Nên bấm sau mỗi lần sửa trang hoặc dán luật Firebase.</p>
+    <div class="card"><h3 style="font-size:16px">Quyền của khách</h3><div id="ckList" class="tiny">Đang kiểm tra…</div></div>
+    <div class="card" style="margin-top:12px"><h3 style="font-size:16px">Từng mã Pro</h3><div id="ckCodes"></div></div>`;
+  $("ckRun").onclick = async () => { await loadAll(); check(); };
+  const cs = D.codes.map((c) => ({ c, st: codeStatus(c, D, MAX_USES) }));
+  const nOk = cs.filter((x) => x.st.ok === true).length;
+  $("ckCodes").innerHTML = cs.length ? `<p class="small" style="margin:4px 0 8px"><b>${nOk}</b>/${cs.length} mã đang dùng được.</p>
+    <div class="tscroll"><table class="tbl"><tr><th></th><th>Mã</th><th>Dự án</th><th>Ghi chú</th><th>Tình trạng</th></tr>
+    ${cs.map(({ c, st }) => `<tr><td>${ico(st.ok)}</td><td class="mono">${esc(c.id)}</td><td>${esc(pName(c.project))}</td><td class="small">${esc(c.note || "")}</td><td class="small">${esc(st.text)}</td></tr>`).join("")}</table></div>`
+    : '<p class="tiny">Chưa có mã nào.</p>';
+  try {
+    const res = await runChecks(D);
+    const bad = res.filter((r) => r.ok === false).length;
+    $("ckList").innerHTML = `<p class="small" style="margin:4px 0 8px">${bad ? `<b style="color:var(--bad)">${bad} mục cần xử lý</b>` : '<b style="color:var(--ok)">Mọi thứ ổn ✅</b>'}</p>
+      <table class="tbl">${res.map((r) => `<tr><td style="width:28px">${ico(r.ok)}</td><td>${esc(r.name)}</td><td class="small muted">${esc(r.detail)}</td></tr>`).join("")}</table>`;
+  } catch (e) { $("ckList").textContent = "Không chạy được kiểm tra: " + (e.message || e); }
+}
+
 // ---------- Gop y cua khach ----------
 async function feedback() {
   P("feedback").innerHTML = `<div class="toolbar"><h2>💬 Góp ý của khách</h2><span class="pill" id="fbN">…</span><button class="btn sm" id="fbReload">↻ Làm mới</button></div><div id="fbList" class="tiny">Đang tải…</div>`;
