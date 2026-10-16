@@ -61,7 +61,7 @@ document.querySelectorAll("#nav button").forEach((b) => b.onclick = () => show(b
 function show(p) {
   document.querySelectorAll("#nav button").forEach((b) => b.classList.toggle("on", b.dataset.p === p));
   document.querySelectorAll("[data-panel]").forEach((e) => e.classList.toggle("hide", e.dataset.panel !== p));
-  ({ dash, visits, flashes, boards, codes, projects, settings, look: settings, sell: settings, device: settings })[p]();
+  ({ dash, visits, flashes, boards, codes, projects, feedback, settings, look: settings, sell: settings, device: settings })[p]();
 }
 
 async function loadAll() {
@@ -170,6 +170,29 @@ function flashes() {
 }
 
 // ---------- Mach da nap ----------
+// ---------- Gop y cua khach ----------
+async function feedback() {
+  P("feedback").innerHTML = `<div class="toolbar"><h2>💬 Góp ý của khách</h2><span class="pill" id="fbN">…</span><button class="btn sm" id="fbReload">↻ Làm mới</button></div><div id="fbList" class="tiny">Đang tải…</div>`;
+  $("fbReload").onclick = feedback;
+  let list = [];
+  try {
+    const q = await getDocs(query(collection(db, "feedback"), orderBy("at", "desc"), limit(300)));
+    list = q.docs.map((d) => ({ id: d.id, ...d.data() }));
+  } catch (e) { $("fbList").textContent = "Chưa đọc được góp ý (đã dán luật Firebase mới chưa?)"; return; }
+  $("fbN").textContent = list.length + " góp ý";
+  const star = (n) => n ? `<span style="color:var(--pro)">${"★".repeat(n)}</span><span class="muted">${"★".repeat(5 - n)}</span>` : "";
+  $("fbList").innerHTML = list.length ? list.map((f) => `<div class="card" style="margin-bottom:10px;padding:14px">
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><b style="flex:1">${star(f.stars)} ${f.project ? `<span class="pill">${esc(f.project)}</span>` : ""}</b>
+        <span class="tiny">${fmtTime(f.at)}</span><button class="btn sm danger" data-fdel="${esc(f.id)}">Xoá</button></div>
+      <div style="white-space:pre-wrap;margin:8px 0;font-size:15px">${esc(f.msg)}</div>
+      <div class="tiny">${f.contact ? "📇 " + esc(f.contact) + " · " : ""}${esc(f.device || "")}</div></div>`).join("")
+    : '<div class="card muted">Chưa có góp ý nào.</div>';
+  $("fbList").querySelectorAll("[data-fdel]").forEach((b) => b.onclick = async () => {
+    if (!confirm("Xoá góp ý này?")) return;
+    await deleteDoc(doc(db, "feedback", b.dataset.fdel)); feedback();
+  });
+}
+
 function boards() {
   const m = {};
   D.flashes.filter((x) => x.ok && x.mac).forEach((x) => {

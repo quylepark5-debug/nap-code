@@ -15,7 +15,7 @@ let siteCfg = {};
 let projects = [], cur = null, codeInfo = null, busy = false, uid = null;
 let limitCfg = null, credit = false, cdTimer = 0;   // gioi han nap ban thuong; credit = da tru 1 luot nhung chua nap xong (Thu lai khong tru them)
 const fwCache = {};                              // firmware da tai trong lan mo trang nay -> nap mach khac khong tai lai
-let ownerMode = false;   // chu trang thu nap: Pro khong can ma, khong tru luot
+let ownerUser = false, ownerMode = false;   // ownerMode: chu trang bam "bo qua ma" -> Pro khong can ma, khong tru luot (mac dinh van hoi ma nhu khach)
 let unlocked = null; // ma da kich hoat trong lan mo trang nay -> "Thu lai" khong tinh them luot
 
 const md5u8 = (u8) => SparkMD5.ArrayBuffer.hash(u8.buffer.slice(u8.byteOffset, u8.byteOffset + u8.byteLength));
@@ -29,7 +29,7 @@ if (!("serial" in navigator)) $("noSerial").classList.remove("hide");
   try {
     if (!(await authReady())) await signInAnonymously(auth);
     uid = auth.currentUser.uid;
-    ownerMode = !auth.currentUser.isAnonymous;     // chu trang dang dang nhap (trang quan ly) tren trinh duyet nay
+    ownerUser = !auth.currentUser.isAnonymous;     // chu trang dang dang nhap (trang quan ly) tren trinh duyet nay
   } catch (e) { console.warn("auth", e); }
   logVisit();
   loadContact();
@@ -252,7 +252,7 @@ function clearTier() {
   $("proBox").classList.add("hide");
   $("infoSec").classList.add("hide");
   $("optBox").classList.add("hide");
-  $("proWait").classList.add("hide");
+  $("proWait").classList.add("hide"); $("ownerSkip").classList.add("hide"); $("proFreeNote").classList.add("hide");
   $("quotaBox").classList.add("hide"); clearInterval(cdTimer);
   $("reqCard").open = true;
   $("dlBox").classList.add("hide");
@@ -266,9 +266,11 @@ function setTier(t) {
   document.querySelector(`input[name=tier][value=${t}]`).checked = true;
   $("tFree").classList.toggle("on", t === "free");
   $("tPro").classList.toggle("on", t === "pro");
+  $("ownerSkip").classList.toggle("hide", !(ownerUser && t === "pro" && !proFree(cur)));
   $("proBox").classList.toggle("hide", t !== "pro" || noCode());
   $("proFreeNote").classList.toggle("hide", t !== "pro" || !noCode());
-  if (t === "pro" && ownerMode) $("proFreeNote").innerHTML = "👑 Bạn đang đăng nhập <b>chủ trang</b>: nạp Pro không cần mã, không tính lượt.";
+  $("proFreeNote").innerHTML = ownerMode && !proFree(cur) ? "👑 Chế độ <b>chủ trang</b>: nạp Pro không cần mã, không tính lượt."
+    : "🎁 Bản Pro đang <b>mở miễn phí</b>, không cần mã. Nạp ngay!";
   if (t === "pro" && !codeInfo && !noCode()) { lockPro(); return; }   // Pro: phai co ma hop le moi hien thong so
   showTier(t);
 }
@@ -533,3 +535,35 @@ function nextBoard() {
   $("flashSec").scrollIntoView({ behavior: "smooth", block: "start" });
   showQuota();
 }
+
+// ---------- Gop y cua khach ----------
+let fbStars = 0;
+$("fbBtn").onclick = () => { $("fbBox").classList.toggle("hide"); if (!$("fbBox").classList.contains("hide")) $("fbMsg").focus(); };
+$("fbX").onclick = () => $("fbBox").classList.add("hide");
+document.querySelectorAll("#fbStars button").forEach((b) => b.onclick = () => {
+  fbStars = +b.dataset.s;
+  document.querySelectorAll("#fbStars button").forEach((x) => x.classList.toggle("on", +x.dataset.s <= fbStars));
+});
+$("fbSend").onclick = async () => {
+  const msg = $("fbMsg").value.trim(), out = $("fbMsgOut");
+  if (!msg) { out.textContent = "Bạn viết vài chữ nhé."; return; }
+  let last = 0; try { last = +localStorage.getItem("fb_last") || 0; } catch {}
+  if (Date.now() - last < 60000) { out.textContent = "Bạn vừa gửi rồi, đợi 1 phút rồi gửi tiếp nhé."; return; }
+  if (!uid) { out.textContent = "Chưa kết nối được, thử tải lại trang."; return; }
+  $("fbSend").disabled = true; out.textContent = "Đang gửi…";
+  try {
+    const d = deviceInfo();
+    await addDoc(collection(db, "feedback"), { uid, at: serverTimestamp(), msg: msg.slice(0, 1000),
+      contact: $("fbContact").value.trim().slice(0, 100), stars: fbStars, project: cur?.id || "",
+      device: `${d.device} · ${d.os} · ${d.browser}`.slice(0, 80) });
+    try { localStorage.setItem("fb_last", String(Date.now())); } catch {}
+    $("fbMsg").value = ""; out.textContent = "✅ Đã gửi. Cảm ơn bạn nhiều!";
+    setTimeout(() => $("fbBox").classList.add("hide"), 1800);
+  } catch (e) { out.textContent = "Gửi không được, thử lại sau nhé."; }
+  $("fbSend").disabled = false;
+};
+
+// Chu trang: mac dinh thu nhu khach (phai nhap ma). Bam "Bo qua ma" de nap Pro khong can ma
+$("ownerSkip").onclick = (e) => { e.preventDefault(); ownerMode = !ownerMode;
+  $("ownerSkip").textContent = ownerMode ? "↩ Thử lại như khách (cần mã)" : "👑 Chủ trang: bỏ qua mã";
+  if (tier() === "pro") setTier("pro"); };

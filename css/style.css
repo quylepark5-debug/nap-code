@@ -325,3 +325,15 @@ body.has-bg{background:#070b14}
 body.has-bg .card{background:linear-gradient(180deg,rgba(17,26,46,.82),rgba(11,18,32,.86));backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
 body.has-bg .top{background:rgba(7,11,20,.7);backdrop-filter:blur(10px)}
 .bg-credit{position:fixed;right:10px;bottom:8px;font-size:10.5px;color:rgba(255,255,255,.45);z-index:1}
+
+/* Gop y cua khach: nut noi goc phai duoi */
+.fb-btn{position:fixed;right:18px;bottom:18px;z-index:40;border:1px solid var(--line2);background:rgba(17,26,46,.85);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);color:var(--txt);font:inherit;font-weight:600;font-size:14px;padding:10px 16px;border-radius:99px;cursor:pointer;box-shadow:0 6px 24px rgba(0,0,0,.35);transition:.18s}
+.fb-btn:hover{transform:translateY(-2px);border-color:var(--a1)}
+.fb-box{position:fixed;right:18px;bottom:72px;z-index:41;width:min(340px,calc(100vw - 32px));padding:16px;animation:fbIn .18s ease}
+.fb-box.hide{display:none}
+.fb-box textarea{min-height:90px;margin-bottom:8px}
+@keyframes fbIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.fb-stars{display:flex;gap:2px;margin-bottom:8px}
+.fb-stars button{all:unset;cursor:pointer;font-size:24px;line-height:1;color:var(--line2);transition:.1s}
+.fb-stars button.on{color:var(--pro)}
+@media(max-width:640px){.fb-btn{right:12px;bottom:12px;padding:9px 14px}.fb-box{right:12px;bottom:62px}}

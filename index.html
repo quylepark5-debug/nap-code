@@ -7,7 +7,7 @@
 <meta name="description" content="Nạp firmware cho mạch ESP32 ngay trên trình duyệt, không cần cài phần mềm.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=20">
+<link rel="stylesheet" href="css/style.css?v=22">
 </head>
 <body>
 <div id="pageBg" class="page-bg hide"></div>
@@ -64,6 +64,7 @@
           <div class="contact" data-contact></div></div>
       </div>
 
+      <a href="#" id="ownerSkip" class="tiny hide" style="color:var(--pro);display:inline-block;margin-top:6px">👑 Chủ trang: bỏ qua mã</a>
       <div id="proFreeNote" class="note ok hide">🎁 Bản Pro đang <b>mở miễn phí</b>, không cần mã. Nạp ngay!</div>
       <div id="proWait" class="note hide">🔒 Nhập mã Pro hợp lệ để mở hướng dẫn, sơ đồ chân và tùy chỉnh của bản Pro.</div>
 
@@ -135,12 +136,23 @@
   </div>
 </main>
 
+<button id="fbBtn" class="fb-btn" type="button">💬 Góp ý</button>
+<div id="fbBox" class="fb-box card hide" role="dialog" aria-label="Góp ý">
+  <div style="display:flex;align-items:center;gap:8px"><b style="flex:1">💬 Góp ý cho mình</b><button class="btn sm ghost" id="fbX" type="button">✕</button></div>
+  <div class="tiny" style="margin:4px 0 8px">Lỗi gặp phải, tính năng muốn có, hay chỉ là lời khen đều được. Mình đọc hết!</div>
+  <div class="fb-stars" id="fbStars"><button type="button" data-s="1">★</button><button type="button" data-s="2">★</button><button type="button" data-s="3">★</button><button type="button" data-s="4">★</button><button type="button" data-s="5">★</button></div>
+  <textarea id="fbMsg" maxlength="1000" placeholder="Bạn muốn nói gì với mình?"></textarea>
+  <input type="text" id="fbContact" maxlength="100" placeholder="Zalo / Facebook để mình trả lời (không bắt buộc)">
+  <button class="btn pri" id="fbSend" type="button" style="width:100%;margin-top:8px">Gửi góp ý</button>
+  <div class="tiny" id="fbMsgOut" style="margin-top:6px"></div>
+</div>
+
 <footer><div class="wrap" id="uiFoot">
   Trang ghi nhận lượt truy cập (loại máy, trình duyệt, quốc gia) và mã định danh của mạch khi nạp, để thống kê và hỗ trợ.<br>
   Firmware thuộc bản quyền của <span id="brand2">@tapsualoa</span>. Không sao chép, phát hành lại khi chưa được phép.
 </div></footer>
 
 <script src="https://cdn.jsdelivr.net/npm/spark-md5@3.0.2/spark-md5.min.js"></script>
-<script type="module" src="js/flasher.js?v=20"></script>
+<script type="module" src="js/flasher.js?v=22"></script>
 </body>
 </html>
