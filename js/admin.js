@@ -506,10 +506,12 @@ function settings() {
       </div>
       <div class="tiny" id="lMsg"></div></div>
     <div class="card" style="margin-top:12px"><h3 style="font-size:16px">Ảnh nền đồng hồ theo ngày <span class="pill pro">Bản Pro</span></h3>
-      <p class="muted small" style="margin:4px 0 10px">Đăng tối đa 14 ảnh. Mỗi ngày máy khách tự tải 1 ảnh về làm nền màn đồng hồ, lần lượt theo thứ tự (hết vòng thì lặp lại). Ảnh tự cắt vừa 320×240. Khách vẫn đặt được ảnh riêng hoặc nền có sẵn.</p>
+      <p class="muted small" style="margin:4px 0 10px">Đăng tối đa 14 ảnh, hoặc bấm "Tự lấy 14 ảnh đẹp". Mỗi ngày máy khách tự tải 1 ảnh về làm nền màn đồng hồ, lần lượt theo thứ tự (hết vòng thì lặp lại). Ảnh tự cắt vừa 320×240. Khách vẫn đặt được ảnh riêng hoặc nền có sẵn.</p>
       <div id="bgGrid" class="bggrid"><div class="tiny">Đang tải…</div></div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;align-items:center">
         <label class="btn pri" style="cursor:pointer">＋ Thêm ảnh<input type="file" id="bgAdd" accept="image/*" multiple hidden></label>
+        <button class="btn" id="bgAuto" type="button" title="Tự lấy ảnh phong cảnh đẹp, miễn phí bản quyền (Picsum/Unsplash)">🎲 Tự lấy 14 ảnh đẹp</button>
+        <label class="small" style="display:flex;gap:6px;align-items:center;cursor:pointer"><input type="checkbox" id="bgAutoOn"> Tự thay bộ ảnh mới mỗi 14 ngày</label>
         <span class="tiny" id="bgMsg"></span>
       </div></div>
     <div class="card" style="margin-top:12px"><div class="toolbar" style="margin:0 0 4px"><h3 style="font-size:16px;flex:1">Giao diện trang nạp</h3>
@@ -735,7 +737,7 @@ async function saveBgSet(from = 0) {
   try {
     for (let i = from; i < bgImgs.length; i++) { msg(`Đang lưu ảnh ${i + 1}/${bgImgs.length}…`); await setDoc(doc(db, "config", "bg" + i), { img: Bytes.fromUint8Array(bgImgs[i]) }); }
     for (let i = bgImgs.length; i < BG_MAX; i++) { try { await deleteDoc(doc(db, "config", "bg" + i)); } catch {} if (i > bgImgs.length + 1) break; }
-    await setDoc(doc(db, "config", "bgset"), { ver: Math.floor(Date.now() / 1000), n: bgImgs.length, updatedAt: serverTimestamp() });
+    await setDoc(doc(db, "config", "bgset"), { ver: Math.floor(Date.now() / 1000), n: bgImgs.length, updatedAt: serverTimestamp() }, { merge: true });
     msg("✓ Đã lưu. Máy khách cập nhật ở lần đồng bộ tới."); toast("Đã lưu bộ ảnh nền");
   } catch (e) { msg("Lỗi: " + e.message); }
   drawBgGrid();
@@ -748,6 +750,32 @@ async function wireBgSet() {
     for (let i = 0; i < n; i++) { const d = (await getDoc(doc(db, "config", "bg" + i))).data(); if (d?.img) bgImgs.push(d.img.toUint8Array()); }
   } catch (e) { $("bgMsg").textContent = "Không đọc được bộ ảnh: " + e.message; }
   drawBgGrid();
+  // Tu lay anh dep tu Picsum (mien phi ban quyen), thay ca bo 14 anh
+  const autoFill = async () => {
+    $("bgAuto").disabled = true;
+    const got = [], base = Date.now().toString(36);
+    for (let i = 0; i < BG_MAX; i++) {
+      $("bgMsg").textContent = `Đang lấy ảnh ${i + 1}/${BG_MAX}…`;
+      try {
+        const r = await fetch(`https://picsum.photos/seed/${base}${i}/640/480`);
+        if (r.ok) got.push(await fileToRgb565(await r.blob()));
+      } catch {}
+    }
+    $("bgAuto").disabled = false;
+    if (!got.length) { $("bgMsg").textContent = "Không lấy được ảnh, thử lại sau."; return; }
+    bgImgs = got; await saveBgSet(0);
+    try { await setDoc(doc(db, "config", "bgset"), { autoAt: Date.now() }, { merge: true }); } catch {}
+  };
+  $("bgAuto").onclick = () => { if (!bgImgs.length || confirm("Thay toàn bộ ảnh hiện có bằng 14 ảnh mới?")) autoFill(); };
+  try {
+    const set = (await getDoc(doc(db, "config", "bgset"))).data() || {};
+    $("bgAutoOn").checked = !!set.auto;
+    // Da bat tu thay: qua 14 ngay ke tu lan lay truoc -> tu lay bo moi khi chu trang mo trang quan ly
+    if (set.auto && Date.now() - (set.autoAt || 0) > 14 * DAY) { toast("Đang tự thay bộ ảnh nền đồng hồ mới…"); autoFill(); }
+  } catch {}
+  $("bgAutoOn").onchange = async () => {
+    try { await setDoc(doc(db, "config", "bgset"), { auto: $("bgAutoOn").checked }, { merge: true }); toast($("bgAutoOn").checked ? "Đã bật tự thay ảnh" : "Đã tắt tự thay ảnh"); } catch (e) { toast("Lỗi: " + e.message); }
+  };
   $("bgAdd").onchange = async () => {
     const files = [...$("bgAdd").files].slice(0, BG_MAX - bgImgs.length);
     if (!files.length) return toast(`Tối đa ${BG_MAX} ảnh`);
