@@ -421,3 +421,6 @@ body{background-color:var(--bg);
 .donate img{box-shadow:0 0 0 3px rgba(255,194,74,.5),0 10px 30px -10px rgba(255,194,74,.5)}
 .pack.hot{border-color:var(--pro);background:linear-gradient(160deg,rgba(255,194,74,.16),rgba(18,12,42,.9))}
 .pack .tag{background:linear-gradient(120deg,#ffd77a,#ffb02e)}
+/* Ghi chu cuoi trang: luon doc ro tren anh nen */
+footer .wrap{max-width:760px;margin:0 auto 24px;padding:12px 18px;border-radius:14px;background:rgba(12,8,32,.82);border:1px solid var(--line2);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);color:var(--sub);font-size:12.5px;line-height:1.6;text-align:center}
+footer{border-top:0}
