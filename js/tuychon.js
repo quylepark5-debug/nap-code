@@ -21,7 +21,11 @@ const recall = (k) => { try { const v = localStorage.getItem(`opt_${projId}_${k}
 // Ve form; tier = "free" | "pro" (muc Pro bi khoa khi chon ban thuong)
 export function renderOptions(box, tier, proAvail = true) {
   if (!schema) { box.innerHTML = ""; return; }
-  box.innerHTML = schema.filter((o) => proAvail || o.tier !== "pro").map((o) => {
+  // Ban thuong: an han cac muc Pro (chi ghi 1 dong "ban Pro co them...") cho form gon
+  const proOnly = schema.filter((o) => o.tier === "pro");
+  const more = tier !== "pro" && proAvail && proOnly.length
+    ? `<div class="opt-more tiny">Bản Pro có thêm: ${proOnly.map((o) => esc(o.label)).join(", ")}.</div>` : "";
+  box.innerHTML = schema.filter((o) => o.tier !== "pro" || (proAvail && tier === "pro")).map((o) => {
     const lock = o.tier === "pro" && tier !== "pro";
     const saved = o.type === "password" ? undefined : recall(o.key);
     const v = saved !== undefined ? saved : o.default;
@@ -32,11 +36,13 @@ export function renderOptions(box, tier, proAvail = true) {
     else if (o.type === "city") input = `<select id="${id}">${CITIES.map((c) => `<option ${c[0] === v ? "selected" : ""}>${esc(c[0])}</option>`).join("")}</select>`;
     else if (o.type === "range") input = `<div class="rng"><input type="range" id="${id}" min="${o.min}" max="${o.max}" step="${o.step || 1}" value="${esc(v)}"><b id="${id}_v">${esc(v)}${esc(o.unit || "")}</b></div>`;
     else if (o.type === "check") input = `<label class="chk"><input type="checkbox" id="${id}" ${v ? "checked" : ""}> Bật</label>`;
-    else input = `<input type="${o.type === "password" ? "password" : "text"}" id="${id}" value="${esc(v)}" maxlength="${o.max || 64}" autocomplete="off" spellcheck="false">`;
+    // Mat khau WiFi: dung o chu thuong + che dau cham -> trinh duyet khong hoi "luu mat khau" / canh bao lo mat khau
+    else if (o.type === "password") input = `<div class="pwrap"><input type="text" class="pw" id="${id}" value="" maxlength="${o.max || 64}" autocomplete="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore data-form-type="other"><button type="button" class="pweye" tabindex="-1" title="Hiện/ẩn">👁</button></div>`;
+    else input = `<input type="text" id="${id}" value="${esc(v)}" maxlength="${o.max || 64}" autocomplete="off" spellcheck="false" data-lpignore="true" data-form-type="other">`;
     return `<div class="opt ${lock ? "lock" : ""}" data-key="${esc(o.key)}">
       <label class="field"><span>${esc(o.label)}${tag}</span>${input}</label>
       ${lock ? '<div class="tiny">Có ở bản Pro</div>' : o.help ? `<div class="tiny">${esc(o.help)}</div>` : ""}</div>`;
-  }).join("") + '<div class="opt-act"><button class="btn sm ghost" id="optReset" type="button">↺ Về mặc định</button></div>';
+  }).join("") + more + '<div class="opt-act"><button class="btn sm ghost" id="optReset" type="button">↺ Về mặc định</button></div>';
   schema.forEach((o) => {
     const el = box.querySelector("#opt_" + o.key);
     if (!el) return;
@@ -48,6 +54,7 @@ export function renderOptions(box, tier, proAvail = true) {
     };
     el.addEventListener(o.type === "range" ? "input" : "change", save);
   });
+  box.querySelectorAll(".pweye").forEach((b) => b.onclick = () => b.previousElementSibling.classList.toggle("show"));
   box.querySelector("#optReset").onclick = () => {
     schema.forEach((o) => { try { localStorage.removeItem(`opt_${projId}_${o.key}`); } catch {} });
     renderOptions(box, tier, proAvail);

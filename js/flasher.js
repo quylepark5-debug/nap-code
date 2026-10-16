@@ -117,14 +117,14 @@ function pick(id, scroll) {
   $("noTier").classList.toggle("hide", hasF || hasP);
   clearTier();
   $("done").classList.add("hide"); $("run").classList.add("hide"); $("go").classList.remove("hide");
-  codeInfo = null; $("code").value = ""; $("codeMsg").classList.add("hide");
+  codeInfo = null; $("code").value = ""; $("codeMsg").classList.add("hide"); $("proGet").classList.remove("hide");
   showFit();
   hasOpts = false;
   const pid = cur.id;
   loadOptions(pid).then((has) => {
     if (!cur || cur.id !== pid) return;
     hasOpts = has;
-    if (tier()) { $("optBox").classList.toggle("hide", !has); if (has) renderOptions($("optForm"), tier(), proOn(cur)); }
+    if (tier() && !(tier() === "pro" && !codeInfo)) { $("optBox").classList.toggle("hide", !has); if (has) renderOptions($("optForm"), tier(), proOn(cur)); }
   });
   if (scroll) $("flashSec").scrollIntoView({ behavior: "smooth", block: "start" });
 }
@@ -136,6 +136,9 @@ function clearTier() {
   $("proBox").classList.add("hide");
   $("infoSec").classList.add("hide");
   $("optBox").classList.add("hide");
+  $("proWait").classList.add("hide");
+  $("reqCard").open = true;
+  shownTier = null;
   if (!goText) goText = $("go").dataset.label || $("go").innerHTML;
   $("go").disabled = true;
   $("go").textContent = "Chọn phiên bản ở trên để nạp";
@@ -146,12 +149,33 @@ function setTier(t) {
   $("tFree").classList.toggle("on", t === "free");
   $("tPro").classList.toggle("on", t === "pro");
   $("proBox").classList.toggle("hide", t !== "pro");
+  if (t === "pro" && !codeInfo) { lockPro(); return; }   // Pro: phai co ma hop le moi hien thong so
+  showTier(t);
+}
+// Hien huong dan, so do chan, tuy chinh va mo nut nap cho ban t
+let shownTier = null;
+function showTier(t) {
+  $("proWait").classList.add("hide");
+  $("erase").closest("label").classList.remove("hide");
   $("infoSec").classList.remove("hide");
-  renderInfo(t);
+  $("reqCard").open = false;
+  if (shownTier !== t) { shownTier = t; renderInfo(t); }
   $("optBox").classList.toggle("hide", !hasOpts);
   if (hasOpts) renderOptions($("optForm"), t, proOn(cur));
   $("go").disabled = false;
   $("go").innerHTML = $("go").dataset.label || goText;
+}
+// Chon Pro nhung chua co ma: an het thong so
+function lockPro() {
+  shownTier = null;
+  $("proWait").classList.remove("hide");
+  $("infoSec").classList.add("hide");
+  $("reqCard").open = true;
+  $("optBox").classList.add("hide");
+  $("optForm").innerHTML = "";
+  $("erase").closest("label").classList.add("hide");
+  $("go").disabled = true;
+  $("go").textContent = "Nhập mã Pro để tiếp tục";
 }
 
 // ---------- Kiem tra mach ----------
@@ -207,7 +231,9 @@ let codeT = 0;
 $("code").oninput = () => {
   const el = $("code"), v = normCode(el.value);
   if (el.value !== v) el.value = v;
+  const had = !!codeInfo;
   codeInfo = null; clearTimeout(codeT);
+  if (had && tier() === "pro") lockPro();          // sua ma -> khoa lai
   if (v.length < 14) { codeMsg(""); return; }
   codeT = setTimeout(() => checkCode(v), 300);
 };
@@ -224,6 +250,8 @@ async function checkCode(c) {
       return codeMsg(`Mã đã dùng hết ${max}/${max} lần nạp. Liên hệ để được cấp mã mới.`, "bad");
     codeInfo = { code: c, ...d };
     codeMsg(`✓ Mã hợp lệ · còn ${left}/${max} lần nạp`, "ok");
+    $("proGet").classList.add("hide");
+    if (tier() === "pro") showTier("pro");
   } catch (e) { codeMsg("Không kiểm tra được mã, thử lại.", "bad"); }
 }
 

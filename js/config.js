@@ -13,6 +13,6 @@ export const firebaseConfig = {
 
 // 3) Ten hien thi
 // 4) Repo GitHub chua trang nay (de mo trinh sua huong dan)
-export const GH_REPO = "quylepark5-debug/nap-code";
+export const GH_REPO = "tapsualoa/nap-code";
 
 export const BRAND = { name: "tapsualoa", handle: "@tapsualoa" };
