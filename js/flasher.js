@@ -151,6 +151,32 @@ async function showQuota() {
 }
 
 // Cac goi ma Pro (chu trang dat trong Cai dat): ten, so lan nap, gia, ghi chu, noi bat
+// ---------- Bang gia ban Pro (popup khi khach chon Pro lan dau) ----------
+const PACK_NOTES_DEFAULT = [
+  "Mỗi mã nạp được số mạch theo gói. Nạp lại cho mạch đã nạp bằng mã đó (cập nhật, nạp lỗi…) không tính thêm.",
+  "Bản quyền gắn với từng mạch, không chuyển sang mạch khác được.",
+  "Mã dùng cho dự án đang xem, trừ khi được ghi là dùng cho tất cả dự án.",
+  "Liên hệ để nhận mã sau khi thanh toán. Mã đã kích hoạt không hoàn tiền.",
+];
+const pmShown = new Set();
+function openProModal() {
+  const c = siteCfg || {}, ps = (c.packs || []).filter((x) => x && x.name && x.uses > 0);
+  $("pmFeat").innerHTML = (cur?.pro?.features || []).map((x) => `<li>${esc(x)}</li>`).join("");
+  $("pmPacks").innerHTML = ps.length ? ps.map((x) => `<div class="pack ${x.hot ? "hot" : ""}">${x.hot ? '<span class="tag">Nhiều người chọn</span>' : ""}
+    <div class="nm">${esc(x.name)}</div><div class="pr">${esc(x.price || "Liên hệ")}</div>
+    <div class="us"><b>${x.uses}</b> mạch</div>${x.note ? `<div class="nt">${esc(x.note)}</div>` : ""}</div>`).join("")
+    : '<div class="note" style="grid-column:1/-1">Liên hệ để biết giá và nhận mã.</div>';
+  const notes = (c.packNotes || "").split("\n").map((x) => x.trim()).filter(Boolean);
+  $("pmNotes").innerHTML = (notes.length ? notes : PACK_NOTES_DEFAULT).map((x) => `<li>${esc(x)}</li>`).join("");
+  $("proModal").classList.remove("hide");
+}
+const closeProModal = () => $("proModal").classList.add("hide");
+$("pmX").onclick = closeProModal;
+$("proModal").onclick = (e) => { if (e.target.id === "proModal") closeProModal(); };
+document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeProModal(); });
+$("pmHave").onclick = () => { closeProModal(); $("code").focus(); };
+$("pmOpen").onclick = (e) => { e.preventDefault(); openProModal(); };
+
 function renderPacks(list) {
   const ps = (list || []).filter((x) => x && x.name && x.uses > 0);
   const box = $("packs");
@@ -271,7 +297,11 @@ function setTier(t) {
   $("proFreeNote").classList.toggle("hide", t !== "pro" || !noCode());
   $("proFreeNote").innerHTML = ownerMode && !proFree(cur) ? "👑 Chế độ <b>chủ trang</b>: nạp Pro không cần mã, không tính lượt."
     : "🎁 Bản Pro đang <b>mở miễn phí</b>, không cần mã. Nạp ngay!";
-  if (t === "pro" && !codeInfo && !noCode()) { lockPro(); return; }   // Pro: phai co ma hop le moi hien thong so
+  if (t === "pro" && !codeInfo && !noCode()) {
+    lockPro();
+    if (cur && !pmShown.has(cur.id)) { pmShown.add(cur.id); openProModal(); }   // lan dau chon Pro: hien bang gia
+    return;
+  }   // Pro: phai co ma hop le moi hien thong so
   showTier(t);
 }
 // Hien huong dan, so do chan, tuy chinh va mo nut nap cho ban t

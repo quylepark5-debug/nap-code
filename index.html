@@ -7,7 +7,7 @@
 <meta name="description" content="Nạp firmware cho mạch ESP32 ngay trên trình duyệt, không cần cài phần mềm.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=28">
+<link rel="stylesheet" href="css/style.css?v=29">
 </head>
 <body>
 <div id="pageBg" class="page-bg hide"></div>
@@ -60,6 +60,7 @@
         <div id="codeMsg" class="note hide"></div>
         <div class="tiny" style="margin:6px 0" id="usesNote">📌 Mỗi mã nạp được <b>5 mạch</b>. <b>Nạp lại cho mạch đã nạp</b> bằng mã đó (cập nhật, nạp lỗi…) thì không tính thêm.</div>
         <div id="packs" class="packs hide"></div>
+        <a href="#" id="pmOpen" class="small" style="color:var(--pro);font-weight:600">📋 Xem bảng giá & lưu ý bản Pro</a>
         <div class="note" id="proGet">Chưa có mã? Chọn gói rồi liên hệ để được cấp:
           <div class="contact" data-contact></div></div>
       </div>
@@ -137,6 +138,18 @@
   </div>
 </main>
 
+<div id="proModal" class="pm-wrap hide" role="dialog" aria-modal="true" aria-label="Bảng giá bản Pro">
+  <div class="pm card">
+    <div style="display:flex;align-items:center;gap:10px"><h2 style="flex:1;font-size:21px">💎 Bản Pro</h2><button class="btn sm ghost" id="pmX" type="button">✕</button></div>
+    <ul class="pm-feat" id="pmFeat"></ul>
+    <div class="packs" id="pmPacks"></div>
+    <div class="pm-notes"><b>Lưu ý</b><ul id="pmNotes"></ul></div>
+    <div class="small" style="margin:12px 0 6px">Liên hệ để mua mã:</div>
+    <div class="contact" data-contact></div>
+    <button class="btn pri" id="pmHave" type="button" style="width:100%;margin-top:14px">Tôi đã có mã, nhập mã</button>
+  </div>
+</div>
+
 <button id="fbBtn" class="fb-btn" type="button">💬 Góp ý</button>
 <div id="fbBox" class="fb-box card hide" role="dialog" aria-label="Góp ý">
   <div style="display:flex;align-items:center;gap:8px"><b style="flex:1">💬 Góp ý cho mình</b><button class="btn sm ghost" id="fbX" type="button">✕</button></div>
@@ -155,6 +168,6 @@
 
 <script src="https://cdn.jsdelivr.net/npm/spark-md5@3.0.2/spark-md5.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" defer></script>
-<script type="module" src="js/flasher.js?v=28"></script>
+<script type="module" src="js/flasher.js?v=29"></script>
 </body>
 </html>

@@ -521,10 +521,12 @@ function settings() {
         <div><div class="small muted" style="margin-bottom:6px">Xem trước</div>
           <img id="dPv" alt="" style="width:200px;height:200px;object-fit:contain;background:#fff;border-radius:12px;padding:8px;display:block"></div>
       </div></div>
-    <div class="card" style="margin-top:12px"><h3 style="font-size:16px">Gói mã Pro (hiện ở ô nhập mã trên trang nạp)</h3>
+    <div class="card" style="margin-top:12px"><h3 style="font-size:16px">Gói mã Pro (bảng giá hiện khi khách chọn bản Pro)</h3>
       <p class="muted small" style="margin:4px 0 10px">Mỗi gói: tên, số lần nạp, giá (ghi tự do, vd "59k"), ghi chú ngắn. Tick ⭐ để làm nổi gói đó. Khi tạo mã, chọn gói là tự điền số lần nạp. Không có gói nào = trang chỉ ghi "5 lần nạp".</p>
       <div class="pkrow tiny muted"><span>Tên gói</span><span>Số lần</span><span>Giá</span><span class="pk-nt">Ghi chú</span><span>⭐</span><span></span></div>
       <div id="pkList"></div>
+      <label class="field" style="margin-top:10px"><span>Lưu ý cố định trong bảng giá Pro (mỗi dòng 1 ý, luôn hiện dù đổi gói). Để trống = dùng lưu ý mặc định</span>
+        <textarea id="pkNotes" style="min-height:96px" placeholder="Mỗi mã nạp được số mạch theo gói. Nạp lại cho mạch đã nạp không tính thêm.&#10;Bản quyền gắn với từng mạch, không chuyển sang mạch khác được.&#10;Liên hệ để nhận mã sau khi thanh toán. Mã đã kích hoạt không hoàn tiền.">${esc(D.config.packNotes || "")}</textarea></label>
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px">
         <button class="btn" id="pkAdd">＋ Thêm gói</button><button class="btn pri" id="pkSave">Lưu gói</button>
         <button class="btn ghost" id="pkSample">Điền mẫu gợi ý</button>
@@ -716,7 +718,8 @@ function settings() {
   })).filter((x) => all || (x.name && x.uses));
   $("pkSave").onclick = async () => {
     const packs = pkRead();
-    try { await setDoc(doc(db, "config", "site"), { packs }, { merge: true }); D.config.packs = packs; pkDraw(packs); toast("Đã lưu " + packs.length + " gói"); }
+    const packNotes = $("pkNotes").value.trim().slice(0, 1500);
+    try { await setDoc(doc(db, "config", "site"), { packs, packNotes }, { merge: true }); D.config.packs = packs; D.config.packNotes = packNotes; pkDraw(packs); toast("Đã lưu " + packs.length + " gói + lưu ý"); }
     catch (e) { toast("Lỗi lưu: " + e.message); }
   };
   // ----- Gioi han nap ban thuong -----

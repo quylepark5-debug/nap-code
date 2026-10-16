@@ -424,3 +424,14 @@ body{background-color:var(--bg);
 /* Ghi chu cuoi trang: luon doc ro tren anh nen */
 footer .wrap{max-width:760px;margin:0 auto 24px;padding:12px 18px;border-radius:14px;background:rgba(12,8,32,.82);border:1px solid var(--line2);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);color:var(--sub);font-size:12.5px;line-height:1.6;text-align:center}
 footer{border-top:0}
+
+/* Bang gia ban Pro (hien khi khach chon Pro) */
+.pm-wrap{position:fixed;inset:0;z-index:60;background:rgba(6,3,18,.72);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);display:grid;place-items:center;padding:16px;overflow:auto}
+.pm-wrap.hide{display:none}
+.pm{width:min(560px,100%);border-color:rgba(255,194,74,.45);box-shadow:0 0 0 1px rgba(255,194,74,.15),0 30px 80px -20px rgba(255,194,74,.35);animation:fbIn .2s ease}
+.pm h2{background:linear-gradient(120deg,#ffe2a3,#ffb02e);-webkit-background-clip:text;background-clip:text;color:transparent}
+.pm-feat{margin:10px 0 4px;padding:0;list-style:none;display:grid;grid-template-columns:1fr 1fr;gap:4px 14px;font-size:13.5px;color:var(--txt)}
+.pm-feat li{padding-left:20px;position:relative}.pm-feat li:before{content:"✓";position:absolute;left:0;color:var(--pro)}
+.pm-notes{margin-top:12px;padding:10px 14px;border-radius:12px;background:rgba(255,194,74,.06);border:1px dashed rgba(255,194,74,.35);font-size:13px}
+.pm-notes ul{margin:6px 0 0;padding-left:18px;color:var(--sub)}.pm-notes li{margin:3px 0}
+@media(max-width:560px){.pm-feat{grid-template-columns:1fr}}
