@@ -521,6 +521,7 @@ function settings() {
         ${f("facebook", "Facebook: link trang", "https://facebook.com/...")}${f("facebookName", "Chữ hiện cạnh nút Facebook", "Tên trang")}
         ${f("tiktok", "TikTok", "@tapsualoa")}<div></div>
         ${f("otherName", "Liên hệ khác: tên nút", "Shopee")}${f("other", "Liên hệ khác: link")}
+        ${f("seller", "Tên người bán (hiện ở mục Thông tin người bán)", "Lê Thanh · @tapsualoa")}${f("refund", "Chính sách đổi / hoàn tiền (1 câu)", "Không nạp được do lỗi phía mình thì đổi mã hoặc hoàn tiền trong 7 ngày.")}
       </div>
       <button class="btn pri" id="sSave">Lưu</button></div>
     <div class="card" style="margin-top:12px"><h3 style="font-size:16px">Ảnh nền trang nạp</h3>
@@ -559,6 +560,7 @@ function settings() {
       <p class="muted small" style="margin:4px 0 10px">Mỗi gói: tên, số mạch, giá (ghi tự do, vd "59k"), ghi chú ngắn, ảnh <b>QR chuyển khoản</b> đã điền sẵn số tiền (khách chọn gói nào thì hiện QR gói đó). Tick ⭐ để làm nổi gói đó. Khi tạo mã, chọn gói là tự điền số lần nạp. Không có gói nào = trang chỉ ghi "5 lần nạp".</p>
       <div class="pkrow tiny muted"><span>Tên gói</span><span>Số mạch</span><span>Giá</span><span class="pk-nt">Ghi chú</span><span>⭐</span><span></span><span>QR</span></div>
       <div id="pkList"></div>
+      <label class="small" style="display:flex;gap:8px;align-items:center;cursor:pointer;margin:10px 0 0"><input type="checkbox" id="pkOn" ${D.config.packsOn !== false ? "checked" : ""}> Hiện bảng giá khi khách chọn Bản Pro (chỉ khi Pro cần mã)</label>
       <label class="field" style="margin-top:10px"><span>Lưu ý cố định trong bảng giá Pro (mỗi dòng 1 ý, luôn hiện dù đổi gói). Để trống = dùng lưu ý mặc định</span>
         <textarea id="pkNotes" style="min-height:96px" placeholder="Mỗi mã nạp được số mạch theo gói. Nạp lại cho mạch đã nạp không tính thêm.&#10;Bản quyền gắn với từng mạch, không chuyển sang mạch khác được.&#10;Liên hệ để nhận mã sau khi thanh toán. Mã đã kích hoạt không hoàn tiền.">${esc(D.config.packNotes || "")}</textarea></label>
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px">
@@ -642,7 +644,7 @@ function settings() {
   }
   P("settings").querySelector(".toolbar h2").textContent = "⚙️ Cài đặt chung";
   $("sSave").onclick = async () => {
-    const d = {}; ["zalo", "zaloName", "facebook", "facebookName", "tiktok", "otherName", "other"].forEach((k) => d[k] = $("s_" + k).value.trim());
+    const d = {}; ["zalo", "zaloName", "facebook", "facebookName", "tiktok", "otherName", "other", "seller", "refund"].forEach((k) => d[k] = $("s_" + k).value.trim());
     await setDoc(doc(db, "config", "site"), d, { merge: true }); Object.assign(D.config, d); toast("Đã lưu liên hệ");
   };
   // ----- Anh nen trang nap -----
@@ -772,7 +774,8 @@ function settings() {
     const qr = {}; packs.forEach((x) => { if (pkQr[x.q]) qr[x.q] = pkQr[x.q]; });
     try { await setDoc(doc(db, "config", "packqr"), qr); } catch (e) { return toast("Lỗi lưu QR: " + e.message); }
     packs.forEach((x) => x.hasQr = !!qr[x.q]);
-    try { await setDoc(doc(db, "config", "site"), { packs, packNotes }, { merge: true }); D.config.packs = packs; D.config.packNotes = packNotes; pkDraw(packs); toast("Đã lưu " + packs.length + " gói + lưu ý"); }
+    const packsOn = $("pkOn").checked;
+    try { await setDoc(doc(db, "config", "site"), { packs, packNotes, packsOn }, { merge: true }); D.config.packs = packs; D.config.packNotes = packNotes; D.config.packsOn = packsOn; pkDraw(packs); toast("Đã lưu " + packs.length + " gói + lưu ý"); }
     catch (e) { toast("Lỗi lưu: " + e.message); }
   };
   // ----- Gioi han nap ban thuong -----

@@ -56,6 +56,8 @@ async function loadContact() {
     applyUI(c, cur?.board || cur?.chip || "ESP32");
     renderContact(c);
     renderPacks(c.packs);
+    if (c.seller) $("polSeller").textContent = c.seller;
+    if (c.refund) $("polRefund").textContent = c.refund;
     applyPageBg(c.pagebg);
   } catch (e) { console.warn("contact", e); renderContact({}); }
 }
@@ -156,7 +158,7 @@ const PACK_NOTES_DEFAULT = [
   "Mỗi mã nạp được số mạch theo gói. Nạp lại cho mạch đã nạp bằng mã đó (cập nhật, nạp lỗi…) không tính thêm.",
   "Bản quyền gắn với từng mạch, không chuyển sang mạch khác được.",
   "Mã dùng cho dự án đang xem, trừ khi được ghi là dùng cho tất cả dự án.",
-  "Liên hệ để nhận mã sau khi thanh toán. Mã đã kích hoạt không hoàn tiền.",
+  "Liên hệ để nhận mã sau khi thanh toán. Không nạp được do lỗi phía mình thì đổi mã hoặc hoàn tiền.",
 ];
 const pmShown = new Set();
 function openProModal() {
@@ -199,7 +201,8 @@ $("pmOpen").onclick = (e) => { e.preventDefault(); openProModal(); };
 function renderPacks(list) {
   const ps = (list || []).filter((x) => x && x.name && x.uses > 0);
   const box = $("packs");
-  box.classList.toggle("hide", !ps.length);
+  box.classList.add("hide");                        // khong hien 3 the goi duoi o nhap ma nua: chi hien trong bang gia (popup)
+  $("pmOpen").classList.toggle("hide", siteCfg.packsOn === false);
   if (!ps.length) return;
   box.innerHTML = ps.map((x) => `<div class="pack ${x.hot ? "hot" : ""}">${x.hot ? '<span class="tag">Nhiều người chọn</span>' : ""}
     <div class="nm">${esc(x.name)}</div><div class="pr">${esc(x.price || "Liên hệ")}</div>
@@ -318,7 +321,7 @@ function setTier(t) {
     : "🎁 Bản Pro đang <b>mở miễn phí</b>, không cần mã. Nạp ngay!";
   if (t === "pro" && !codeInfo && !noCode()) {
     lockPro();
-    if (cur && !pmShown.has(cur.id)) { pmShown.add(cur.id); openProModal(); }   // lan dau chon Pro: hien bang gia
+    if (cur && siteCfg.packsOn !== false && !pmShown.has(cur.id)) { pmShown.add(cur.id); openProModal(); }   // lan dau chon Pro: hien bang gia (chu trang tat duoc)
     return;
   }   // Pro: phai co ma hop le moi hien thong so
   showTier(t);

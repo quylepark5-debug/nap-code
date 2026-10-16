@@ -7,7 +7,7 @@
 <meta name="description" content="Nạp firmware cho mạch ESP32 ngay trên trình duyệt, không cần cài phần mềm.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=30">
+<link rel="stylesheet" href="css/style.css?v=31">
 </head>
 <body>
 <div id="pageBg" class="page-bg hide"></div>
@@ -61,7 +61,7 @@
         <div class="tiny" style="margin:6px 0" id="usesNote">📌 Mỗi mã nạp được <b>5 mạch</b>. <b>Nạp lại cho mạch đã nạp</b> bằng mã đó (cập nhật, nạp lỗi…) thì không tính thêm.</div>
         <div id="packs" class="packs hide"></div>
         <a href="#" id="pmOpen" class="small" style="color:var(--pro);font-weight:600">📋 Xem bảng giá & lưu ý bản Pro</a>
-        <div class="note" id="proGet">Chưa có mã? Chọn gói rồi liên hệ để được cấp:
+        <div class="note" id="proGet">Chưa có mã? Liên hệ để được cấp:
           <div class="contact" data-contact></div></div>
       </div>
 
@@ -170,6 +170,17 @@
   <div class="tiny" id="fbMsgOut" style="margin-top:6px"></div>
 </div>
 
+<details class="policy wrap" id="policy">
+  <summary>Thông tin người bán & chính sách</summary>
+  <div class="small">
+    <p><b>Người bán:</b> <span id="polSeller">@tapsualoa</span>. Liên hệ qua các nút ở mục Liên hệ phía trên.</p>
+    <p><b>Sản phẩm:</b> firmware (phần mềm) nạp vào mạch ESP32 của bạn. Bản thường miễn phí. Bản Pro bán theo mã kích hoạt, mỗi mã nạp được số mạch ghi trên gói; nạp lại cho mạch đã nạp không tính thêm.</p>
+    <p><b>Đổi / hoàn tiền:</b> <span id="polRefund">Không nạp được do lỗi phía mình thì đổi mã hoặc hoàn tiền trong 7 ngày.</span></p>
+    <p><b>Dữ liệu thu thập:</b> loại máy, trình duyệt, quốc gia ước lượng, mã định danh (MAC) của mạch khi nạp và góp ý bạn gửi, chỉ để thống kê, hỗ trợ và kích hoạt bản quyền. Mật khẩu WiFi bạn nhập được ghi thẳng vào mạch, không gửi lên máy chủ. Muốn xoá dữ liệu của bạn, nhắn cho người bán.</p>
+    <p><b>Mã nguồn mở:</b> firmware có dùng Adafruit GFX & ST7789 (BSD), AnimatedGIF (Apache 2.0), lõi Arduino ESP32 (LGPL 2.1); trang nạp dùng esptool-js (Apache 2.0), Firebase; font Be Vietnam Pro (OFL); ảnh nền từ Picsum/Unsplash.</p>
+  </div>
+</details>
+
 <footer><div class="wrap" id="uiFoot">
   Trang ghi nhận lượt truy cập (loại máy, trình duyệt, quốc gia) và mã định danh của mạch khi nạp, để thống kê và hỗ trợ.<br>
   Firmware thuộc bản quyền của <span id="brand2">@tapsualoa</span>. Không sao chép, phát hành lại khi chưa được phép.
@@ -177,6 +188,6 @@
 
 <script src="https://cdn.jsdelivr.net/npm/spark-md5@3.0.2/spark-md5.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" defer></script>
-<script type="module" src="js/flasher.js?v=30"></script>
+<script type="module" src="js/flasher.js?v=31"></script>
 </body>
 </html>
