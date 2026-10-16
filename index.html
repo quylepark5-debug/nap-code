@@ -7,7 +7,7 @@
 <meta name="description" content="Nạp firmware cho mạch ESP32 ngay trên trình duyệt, không cần cài phần mềm.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=12">
+<link rel="stylesheet" href="css/style.css?v=13">
 </head>
 <body>
 <header class="top"><div class="wrap">
@@ -57,8 +57,9 @@
         <label class="field"><span>Mã kích hoạt Pro</span>
           <input type="text" id="code" class="code-in" placeholder="XXXX-XXXX-XXXX" autocomplete="off" spellcheck="false" maxlength="14"></label>
         <div id="codeMsg" class="note hide"></div>
-        <div class="tiny" style="margin:6px 0">📌 Mỗi mã dùng được <b>5 lần nạp</b>. Nạp lỗi rồi bấm <b>Thử lại</b> ngay trên trang thì không tính thêm.</div>
-        <div class="note" id="proGet">Chưa có mã? Liên hệ để được cấp:
+        <div class="tiny" style="margin:6px 0" id="usesNote">📌 Mỗi mã dùng được <b>5 lần nạp</b>. Nạp lỗi rồi bấm <b>Thử lại</b> ngay trên trang thì không tính thêm.</div>
+        <div id="packs" class="packs hide"></div>
+        <div class="note" id="proGet">Chưa có mã? Chọn gói rồi liên hệ để được cấp:
           <div class="contact" data-contact></div></div>
       </div>
 
@@ -130,6 +131,6 @@
 </div></footer>
 
 <script src="https://cdn.jsdelivr.net/npm/spark-md5@3.0.2/spark-md5.min.js"></script>
-<script type="module" src="js/flasher.js?v=12"></script>
+<script type="module" src="js/flasher.js?v=13"></script>
 </body>
 </html>

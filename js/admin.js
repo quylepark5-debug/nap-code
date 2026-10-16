@@ -201,6 +201,7 @@ function codes() {
       <div class="grid2">
         <label class="field"><span>Dự án</span><select id="cProj">${opts}<option value="*">Tất cả dự án</option></select></label>
         <label class="field"><span>Ghi chú (tên khách, Zalo…)</span><input type="text" id="cNote" maxlength="120"></label>
+        ${(D.config.packs || []).length ? `<label class="field"><span>Gói (tự điền số lần nạp)</span><select id="cPack"><option value="">— Chọn gói —</option>${D.config.packs.map((x, i) => `<option value="${i}">${esc(x.name)} · ${x.uses} lần · ${esc(x.price || "")}</option>`).join("")}</select></label>` : ""}
         <label class="field"><span>Số lần nạp mỗi mã</span><input type="number" id="cMax" value="${MAX_USES}" min="1" max="50"></label>
         <label class="field"><span>Số mã cần tạo</span><input type="number" id="cN" value="1" min="1" max="20"></label>
       </div>
@@ -219,6 +220,11 @@ function codes() {
           <button class="btn sm danger" data-del="${esc(c.id)}">Xoá</button></td></tr>`;
     }).join("") || '<tr><td colspan="8" class="tiny">Chưa có mã</td></tr>'}</table></div>`;
 
+  if ($("cPack")) $("cPack").onchange = () => {
+    const x = D.config.packs[$("cPack").value]; if (!x) return;
+    $("cMax").value = x.uses;
+    if (!$("cNote").value.trim()) $("cNote").value = x.name + " " + (x.price || "");
+  };
   $("cMake").onclick = async () => {
     const n = Math.min(20, Math.max(1, +$("cN").value || 1)), max = Math.min(50, Math.max(1, +$("cMax").value || MAX_USES));
     const made = [];
@@ -425,6 +431,14 @@ function settings() {
         ${f("otherName", "Liên hệ khác: tên nút", "Shopee")}${f("other", "Liên hệ khác: link")}
       </div>
       <button class="btn pri" id="sSave">Lưu</button></div>
+    <div class="card" style="margin-top:12px"><h3 style="font-size:16px">Gói mã Pro (hiện ở ô nhập mã trên trang nạp)</h3>
+      <p class="muted small" style="margin:4px 0 10px">Mỗi gói: tên, số lần nạp, giá (ghi tự do, vd "59k"), ghi chú ngắn. Tick ⭐ để làm nổi gói đó. Khi tạo mã, chọn gói là tự điền số lần nạp. Không có gói nào = trang chỉ ghi "5 lần nạp".</p>
+      <div class="pkrow tiny muted"><span>Tên gói</span><span>Số lần</span><span>Giá</span><span class="pk-nt">Ghi chú</span><span>⭐</span><span></span></div>
+      <div id="pkList"></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px">
+        <button class="btn" id="pkAdd">＋ Thêm gói</button><button class="btn pri" id="pkSave">Lưu gói</button>
+        <button class="btn ghost" id="pkSample">Điền mẫu gợi ý</button>
+      </div></div>
     <div class="card" style="margin-top:12px"><h3 style="font-size:16px">Giới hạn nạp bản thường</h3>
       <p class="muted small" style="margin:4px 0 10px">Mỗi máy (trình duyệt) của khách chỉ nạp được số lần này trong khung giờ. Hết lượt, trang hiện đồng hồ đếm ngược và gợi ý bản Pro. Bản Pro không bị giới hạn. Nạp lỗi bấm "Thử lại" không bị trừ thêm.</p>
       <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:end">
@@ -482,6 +496,32 @@ function settings() {
   $("sSave").onclick = async () => {
     const d = {}; ["zalo", "zaloName", "facebook", "facebookName", "tiktok", "otherName", "other"].forEach((k) => d[k] = $("s_" + k).value.trim());
     await setDoc(doc(db, "config", "site"), d, { merge: true }); Object.assign(D.config, d); toast("Đã lưu liên hệ");
+  };
+  // ----- Goi ma Pro -----
+  const pkRow = (x = {}) => `<div class="pkrow"><input type="text" class="pk-nm" value="${esc(x.name || "")}" placeholder="Gói cơ bản" maxlength="30">
+    <input type="number" class="pk-us" value="${x.uses || ""}" min="1" max="50" placeholder="5">
+    <input type="text" class="pk-pr" value="${esc(x.price || "")}" placeholder="59k" maxlength="20">
+    <input type="text" class="pk-nt" value="${esc(x.note || "")}" placeholder="Cho 1–2 mạch" maxlength="60">
+    <input type="checkbox" class="pk-hot" ${x.hot ? "checked" : ""}><button class="btn sm danger pk-del" type="button">✕</button></div>`;
+  const pkDraw = (list) => {
+    $("pkList").innerHTML = list.map(pkRow).join("");
+    $("pkList").querySelectorAll(".pk-del").forEach((b) => b.onclick = () => b.closest(".pkrow").remove());
+  };
+  pkDraw(D.config.packs || []);
+  $("pkAdd").onclick = () => pkDraw([...pkRead(true), {}]);
+  $("pkSample").onclick = () => pkDraw([
+    { name: "Gói thử", uses: 1, price: "29k", note: "Nạp 1 mạch" },
+    { name: "Gói cơ bản", uses: 5, price: "79k", note: "Nạp lại thoải mái khi đổi mạch", hot: true },
+    { name: "Gói thợ", uses: 20, price: "199k", note: "Cho người lắp bán lại" },
+  ]);
+  const pkRead = (all) => [...$("pkList").querySelectorAll(".pkrow")].map((r) => ({
+    name: r.querySelector(".pk-nm").value.trim(), uses: Math.max(0, Math.min(50, parseInt(r.querySelector(".pk-us").value, 10) || 0)),
+    price: r.querySelector(".pk-pr").value.trim(), note: r.querySelector(".pk-nt").value.trim(), hot: r.querySelector(".pk-hot").checked,
+  })).filter((x) => all || (x.name && x.uses));
+  $("pkSave").onclick = async () => {
+    const packs = pkRead();
+    try { await setDoc(doc(db, "config", "site"), { packs }, { merge: true }); D.config.packs = packs; pkDraw(packs); toast("Đã lưu " + packs.length + " gói"); }
+    catch (e) { toast("Lỗi lưu: " + e.message); }
   };
   // ----- Gioi han nap ban thuong -----
   getDoc(doc(db, "config", "limit")).then((d) => {

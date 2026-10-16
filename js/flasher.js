@@ -52,6 +52,7 @@ async function loadContact() {
     siteCfg = c;
     applyUI(c, cur?.board || cur?.chip || "ESP32");
     renderContact(c);
+    renderPacks(c.packs);
   } catch (e) { console.warn("contact", e); renderContact({}); }
 }
 // ---------- Gioi han nap ban thuong (chu trang chinh trong trang quan ly) ----------
@@ -103,6 +104,18 @@ async function showQuota() {
   };
   tick(); cdTimer = setInterval(tick, 1000);
   $("go").disabled = true;
+}
+
+// Cac goi ma Pro (chu trang dat trong Cai dat): ten, so lan nap, gia, ghi chu, noi bat
+function renderPacks(list) {
+  const ps = (list || []).filter((x) => x && x.name && x.uses > 0);
+  const box = $("packs");
+  box.classList.toggle("hide", !ps.length);
+  if (!ps.length) return;
+  box.innerHTML = ps.map((x) => `<div class="pack ${x.hot ? "hot" : ""}">${x.hot ? '<span class="tag">Nhiều người chọn</span>' : ""}
+    <div class="nm">${esc(x.name)}</div><div class="pr">${esc(x.price || "Liên hệ")}</div>
+    <div class="us"><b>${x.uses}</b> lần nạp</div>${x.note ? `<div class="nt">${esc(x.note)}</div>` : ""}</div>`).join("");
+  $("usesNote").innerHTML = "📌 Mỗi mã có số lần nạp theo gói. Nạp lỗi rồi bấm <b>Thử lại</b> ngay trên trang thì không tính thêm.";
 }
 
 function renderContact(c) {
@@ -173,7 +186,7 @@ function pick(id, scroll) {
   clearTier();
   $("done").classList.add("hide"); $("run").classList.add("hide"); $("go").classList.remove("hide");
   credit = false;
-  codeInfo = null; $("code").value = ""; $("codeMsg").classList.add("hide"); $("proGet").classList.remove("hide");
+  codeInfo = null; $("code").value = ""; $("codeMsg").classList.add("hide"); $("proGet").classList.remove("hide"); renderPacks(siteCfg.packs);
   showFit();
   hasOpts = false;
   const pid = cur.id;
@@ -316,7 +329,7 @@ async function checkCode(c) {
       return codeMsg(`Mã đã dùng hết ${max}/${max} lần nạp. Liên hệ để được cấp mã mới.`, "bad");
     codeInfo = { code: c, ...d };
     codeMsg(`✓ Mã hợp lệ · còn ${left}/${max} lần nạp`, "ok");
-    $("proGet").classList.add("hide");
+    $("proGet").classList.add("hide"); $("packs").classList.add("hide");
     if (tier() === "pro") showTier("pro");
   } catch (e) { codeMsg("Không kiểm tra được mã, thử lại.", "bad"); }
 }
