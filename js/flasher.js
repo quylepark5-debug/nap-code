@@ -68,8 +68,9 @@ async function loadDonate() {
   $("donP").textContent = donate.text || "Nếu thấy dự án hữu ích, bạn có thể ủng hộ mình một ly cà phê để có thêm động lực làm dự án mới. Cảm ơn bạn!";
   $("donImg").onclick = () => $("donImg").classList.toggle("big");
 }
+// Sau khi nap thanh cong: chi 1 dong loi cam on + link xuong khung QR cuoi trang (khong hien them QR thu 2)
 const donateMini = () => donate && donate.on && donate.img && donate.afterFlash !== false
-  ? `<div class="don-mini"><img src="${donate.img}" alt="QR"><div class="small muted">${esc(donate.thanks || "Thấy hữu ích thì ủng hộ mình 1 ly cà phê nhé ☕")}</div></div>` : "";
+  ? `<p class="small muted" style="margin-top:12px">${esc(donate.thanks || "Thấy hữu ích thì ủng hộ mình 1 ly cà phê nhé ☕")} <a href="#donSec" class="don-link">Xem mã QR</a></p>` : "";
 
 // ---------- Gioi han nap ban thuong (chu trang chinh trong trang quan ly) ----------
 async function loadLimit() {
@@ -166,7 +167,7 @@ async function loadProjects() {
       <div class="bd"><h3>${esc(p.name)}</h3><div class="muted small">${esc(p.desc || "")}</div>
         <div class="meta"><span class="pill">${esc(p.chip || "ESP32")}</span>
           ${freeOn(p) ? '<span class="pill ok">Miễn phí</span>' : ""}
-          ${proOn(p) ? '<span class="pill pro">Có bản Pro</span>' : ""}</div></div>
+          ${proOn(p) ? (proFree(p) ? '<span class="pill pro">Pro miễn phí</span>' : '<span class="pill pro">Có bản Pro</span>') : ""}</div></div>
     </div>`).join("") || '<div class="card muted">Chưa có dự án nào.</div>';
   document.querySelectorAll(".proj").forEach((el) => el.onclick = () => pick(el.dataset.id, true));
   const h = decodeURIComponent(location.hash.slice(1));
@@ -177,6 +178,7 @@ async function loadProjects() {
 // ---------- Chon du an / ban ----------
 const freeOn = (p) => p.freeOn !== false && !!p.free?.parts?.length;   // chu trang bat/tat tung ban trong trang quan ly
 const proOn = (p) => p.proOn !== false && !!p.pro?.parts?.length;
+const proFree = (p) => p?.proFree === true;                             // chu trang tat ma: ai cung nap duoc ban Pro
 let hasOpts = false, chipInfo = null, savedPort = null, goText = "";
 
 function pick(id, scroll) {
@@ -235,8 +237,9 @@ function setTier(t) {
   document.querySelector(`input[name=tier][value=${t}]`).checked = true;
   $("tFree").classList.toggle("on", t === "free");
   $("tPro").classList.toggle("on", t === "pro");
-  $("proBox").classList.toggle("hide", t !== "pro");
-  if (t === "pro" && !codeInfo) { lockPro(); return; }   // Pro: phai co ma hop le moi hien thong so
+  $("proBox").classList.toggle("hide", t !== "pro" || proFree(cur));
+  $("proFreeNote").classList.toggle("hide", t !== "pro" || !proFree(cur));
+  if (t === "pro" && !codeInfo && !proFree(cur)) { lockPro(); return; }   // Pro: phai co ma hop le moi hien thong so
   showTier(t);
 }
 // Hien huong dan, so do chan, tuy chinh va mo nut nap cho ban t
@@ -382,7 +385,7 @@ $("go").onclick = async () => {
   if (busy || !cur || !tier()) return;
   if (!("serial" in navigator)) return alert("Hãy dùng Chrome hoặc Edge trên máy tính.");
   const t = tier();
-  if (t === "pro" && !codeInfo) { codeMsg("Nhập mã Pro hợp lệ trước khi nạp.", "bad"); $("code").focus(); return; }
+  if (t === "pro" && !codeInfo && !proFree(cur)) { codeMsg("Nhập mã Pro hợp lệ trước khi nạp.", "bad"); $("code").focus(); return; }
   const useOpt = !$("optBox").classList.contains("hide");
   const optErr = useOpt ? checkOptions($("optForm")) : "";
   $("optMsg").textContent = optErr; $("optMsg").classList.toggle("hide", !optErr);
@@ -402,7 +405,7 @@ $("go").onclick = async () => {
   savedPort = null;
 
   busy = true; const t0 = Date.now();
-  const rec = { project: cur.id, tier: t, ver: cur[t]?.ver || "", chip: "", mac: "", ok: false, err: "", stage: "", code: t === "pro" ? codeInfo.code : "" };
+  const rec = { project: cur.id, tier: t, ver: cur[t]?.ver || "", chip: "", mac: "", ok: false, err: "", stage: "", code: t === "pro" && codeInfo ? codeInfo.code : "" };
   $("go").classList.add("hide"); $("run").classList.remove("hide"); $("done").classList.add("hide");
   term.clean(); prog(0, "Đang kết nối mạch…");
   const lockEls = [...document.querySelectorAll("input,button,select")].filter((e) => !e.disabled);
@@ -421,7 +424,7 @@ $("go").onclick = async () => {
     if (!fit.ok) throw new Fail(fit.problems.join(" "), "kiểm tra mạch");
     log(`Mạch: ${rec.chip} · MAC ${rec.mac}`);
 
-    if (t === "pro" && !(unlocked && unlocked.code === codeInfo.code && unlocked.project === cur.id)) {
+    if (t === "pro" && !proFree(cur) && !(unlocked && unlocked.code === codeInfo.code && unlocked.project === cur.id)) {
       rec.stage = "kích hoạt";
       prog(0.02, "Đang kích hoạt mã Pro…");
       try {
@@ -463,11 +466,13 @@ $("go").onclick = async () => {
     $("run").classList.add("hide");
     $("done").innerHTML = `<div class="ic">🎉</div><h3>Nạp thành công!</h3>
       <p class="muted small">Mạch đang khởi động lại. Nếu màn hình chưa sáng, nhấn nút <b>RST</b> một lần.</p>
-      ${t === "pro" ? `<p class="pill pro">Mã Pro còn ${Math.max(0, (codeInfo.maxUses || MAX_USES) - codeInfo.uses)}/${codeInfo.maxUses || MAX_USES} lần nạp</p><br><br>` : ""}
-      <button class="btn pri" id="again">🔁 Nạp mạch khác</button>${t === "free" ? donateMini() : ""}`;
+      ${t === "pro" && codeInfo ? `<p class="pill pro">Mã Pro còn ${Math.max(0, (codeInfo.maxUses || MAX_USES) - codeInfo.uses)}/${codeInfo.maxUses || MAX_USES} lần nạp</p><br><br>` : ""}
+      <button class="btn pri" id="again">🔁 Nạp mạch khác</button>${t === "free" || proFree(cur) ? donateMini() : ""}`;
     $("done").classList.remove("hide");
     credit = false;
     $("again").onclick = nextBoard;
+    const dl = $("done").querySelector(".don-link");
+    if (dl) dl.onclick = (e) => { e.preventDefault(); $("donSec").scrollIntoView({ behavior: "smooth", block: "center" }); $("donSec").classList.add("flash-hl"); setTimeout(() => $("donSec").classList.remove("flash-hl"), 1600); };
   } catch (e) {
     rec.err = String(e?.message || e).slice(0, 300);
     if (e instanceof Fail) rec.stage = e.stage;

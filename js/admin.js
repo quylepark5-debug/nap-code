@@ -329,8 +329,9 @@ function editProject(id) {
       <label class="small" style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="e_visible" ${p.visible !== false ? "checked" : ""}> Hiện trên trang nạp</label>
       <label class="small" style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="e_freeOn" ${p.freeOn !== false ? "checked" : ""}> Bật <b>Bản thường</b></label>
       <label class="small" style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="e_proOn" ${p.proOn !== false ? "checked" : ""}> Bật <b>Bản Pro</b></label>
+      <label class="small" style="display:flex;gap:8px;align-items:center" title="Bản Pro vẫn hiện, ai cũng nạp được không cần mã (vd khuyến mãi)"><input type="checkbox" id="e_proFree" ${p.proFree === true ? "checked" : ""}> Pro <b>không cần mã</b> (mở miễn phí)</label>
     </div>
-    <div class="tiny">Tắt một bản thì khách không thấy bản đó (firmware vẫn giữ, bật lại lúc nào cũng được).</div>
+    <div class="tiny">Tắt một bản thì khách không thấy bản đó (firmware vẫn giữ, bật lại lúc nào cũng được). "Pro không cần mã": bản Pro vẫn hiện và ai cũng nạp được, bỏ ô nhập mã.</div>
     ${id ? `<div class="note" style="margin:12px 0 0;display:flex;gap:10px;align-items:center;flex-wrap:wrap">
       <div style="flex:1;min-width:220px">📖 <b>Hướng dẫn · sơ đồ chân · tùy chỉnh trước khi nạp</b><br><span class="tiny">Mở trình sửa: bên trái sửa, bên phải hiện y như trang khách thấy. Bấm vào chỗ nào bên phải là nhảy tới chỗ sửa.</span></div>
       <button class="btn pri" id="eStudio">🎨 Sửa nội dung (xem như khách)</button>
@@ -345,7 +346,7 @@ function editProject(id) {
     const pid = id || $("e_id").value.trim().toLowerCase();
     if (!/^[a-z0-9-]{2,40}$/.test(pid)) return toast("Mã dự án chỉ gồm chữ thường, số, dấu gạch");
     if (!id && D.projects.some((x) => x.id === pid)) return toast("Mã dự án đã tồn tại");
-    const data = { visible: $("e_visible").checked, freeOn: $("e_freeOn").checked, proOn: $("e_proOn").checked,
+    const data = { visible: $("e_visible").checked, freeOn: $("e_freeOn").checked, proOn: $("e_proOn").checked, proFree: $("e_proFree").checked,
       minFlash: Math.max(0, +$("e_minFlash").value || 0), minPsram: Math.max(0, +$("e_minPsram").value || 0), chip: $("e_chip").value, order: +$("e_order").value || 99, longDesc: $("e_longDesc").value, note: $("e_note").value };
     ["name", "emoji", "cover", "desc", "board"].forEach((k) => data[k] = $("e_" + k).value.trim());
     if (!data.name) return toast("Nhập tên dự án");
@@ -432,15 +433,15 @@ function settings() {
       </div>
       <button class="btn pri" id="sSave">Lưu</button></div>
     <div class="card" style="margin-top:12px"><h3 style="font-size:16px">QR ủng hộ (donate)</h3>
-      <p class="muted small" style="margin:4px 0 10px">Chọn ảnh QR ngân hàng (chụp màn hình từ app ngân hàng cũng được). Hiện ở cuối trang nạp, và nhỏ dưới thông báo "Nạp thành công" của bản thường.</p>
+      <p class="muted small" style="margin:4px 0 10px">Chọn ảnh QR ngân hàng (chụp màn hình từ app ngân hàng cũng được). Hiện ở cuối trang nạp (cạnh Liên hệ). Sau khi nạp thành công chỉ hiện 1 dòng cảm ơn kèm link tới mã QR.</p>
       <div class="grid2">
         <div>
           <label class="small" style="display:flex;gap:8px;align-items:center;cursor:pointer;margin-bottom:8px"><input type="checkbox" id="dOn"> Hiện QR trên trang nạp</label>
           <label class="field"><span>Ảnh QR</span><input type="file" id="dImg" accept="image/*"></label>
           <label class="field"><span>Tiêu đề</span><input type="text" id="dT" maxlength="60" placeholder="☕ Ủng hộ mình"></label>
           <label class="field"><span>Lời nhắn (ngân hàng, tên chủ TK… nếu muốn)</span><textarea id="dP" maxlength="300" style="min-height:70px" placeholder="Nếu thấy dự án hữu ích, bạn có thể ủng hộ mình một ly cà phê…"></textarea></label>
-          <label class="small" style="display:flex;gap:8px;align-items:center;cursor:pointer;margin:6px 0"><input type="checkbox" id="dAfter" checked> Hiện QR nhỏ sau khi nạp thành công</label>
-          <label class="field"><span>Câu cảm ơn dưới QR nhỏ</span><input type="text" id="dThx" maxlength="100" placeholder="Thấy hữu ích thì ủng hộ mình 1 ly cà phê nhé ☕"></label>
+          <label class="small" style="display:flex;gap:8px;align-items:center;cursor:pointer;margin:6px 0"><input type="checkbox" id="dAfter" checked> Hiện lời cảm ơn + link "Xem mã QR" sau khi nạp thành công</label>
+          <label class="field"><span>Câu cảm ơn sau khi nạp</span><input type="text" id="dThx" maxlength="100" placeholder="Thấy hữu ích thì ủng hộ mình 1 ly cà phê nhé ☕"></label>
           <button class="btn pri" id="dSave">Lưu QR</button> <span class="tiny" id="dMsg"></span>
         </div>
         <div><div class="small muted" style="margin-bottom:6px">Xem trước</div>

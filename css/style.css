@@ -313,3 +313,5 @@ g.st-hl{outline:none!important}
 .contact-card{text-align:center;display:flex;flex-direction:column;justify-content:center}
 .bottom-row .donate img{width:150px;height:150px}
 @media(max-width:820px){.bottom-row{grid-template-columns:1fr}}
+.flash-hl{box-shadow:0 0 0 2px var(--pro),var(--sh);transition:box-shadow .3s}
+.don-link{color:var(--pro);font-weight:700}
