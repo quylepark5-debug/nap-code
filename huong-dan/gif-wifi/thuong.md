@@ -2,7 +2,7 @@
 1. Cắm nguồn USB cho mạch. Màn hình hiện logo rồi hiện **thông tin WiFi**.
 2. Trên điện thoại, vào **Cài đặt WiFi**, kết nối mạng **ESP32-GIF**, mật khẩu **12345678**.
 3. Mở trình duyệt (Chrome, Safari…), vào địa chỉ **192.168.4.1**.
-4. Bấm **Chọn ảnh / GIF**, chọn một ảnh hoặc GIF bất kỳ. Trang tự thu nhỏ về 320×240.
+4. Bấm **Chọn ảnh / GIF / video**, chọn ảnh, GIF hoặc video (MP4…, tối đa 20 giây). Trang tự thu nhỏ về 320×240 và đổi sang GIF.
 5. Bấm **Gửi sang ESP32**. Màn hình phát GIF lặp lại liên tục, tắt máy mở lại vẫn còn.
 
 ## Nút bấm (2 nút)
