@@ -1,0 +1,27 @@
+{
+  "_ghi_chu": "Mau dien san khi tao du an moi trong trang quan ly (nut 'Dien san tu mau').",
+  "id": "may-hien-song",
+  "name": "Máy hiện sóng S3",
+  "emoji": "📈",
+  "chip": "ESP32-S3",
+  "board": "ESP32-S3 N16R8 + màn ST7789 2.4\" + INA219",
+  "desc": "Máy hiện sóng mini + đồng hồ đo công suất, đo xung, phát GIF qua WiFi",
+  "longDesc": "Biến ESP32-S3 thành máy đo cầm tay: xem dạng sóng điện áp / dòng điện, đo V-A-W-mAh-Wh như đồng hồ USB, đo tần số và độ rộng xung, cảnh báo khi tải bất thường. Lúc không đo thì phát GIF, ảnh gửi từ điện thoại.",
+  "note": "Cần module INA219 (shunt R005) và 2 nút bấm. Chân đo xung GPIO7 chỉ nhận 0–3,3V.",
+  "minFlash": 16,
+  "minPsram": 8,
+  "visible": false,
+  "freeOn": true,
+  "proOn": false,
+  "free": {
+    "ver": "v19",
+    "features": [
+      "Máy hiện sóng: sóng điện áp + dòng điện",
+      "Đồng hồ đo V, A, W, mAh, Wh, đồ thị 60 giây",
+      "Đo tần số, chu kỳ, độ rộng xung, duty",
+      "Cảnh báo dòng tăng vọt, sụt áp, chip nóng",
+      "Phát GIF / video / ảnh qua WiFi",
+      "Cài đặt trên máy: độ sáng, màu màn, hiệu chỉnh"
+    ]
+  }
+}

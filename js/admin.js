@@ -346,6 +346,8 @@ function editProject(id) {
   </div>`;
   $("pEdit").innerHTML = `<div class="card" style="margin-top:16px">
     <div class="toolbar"><h2 style="font-size:18px">${id ? "Sửa: " + esc(p.name) : "Dự án mới"}</h2><button class="btn sm ghost" id="eClose">Đóng</button></div>
+    ${id ? "" : `<div class="note" style="margin:0 0 10px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">📋 Điền sẵn từ mẫu:
+      <select id="ePreset" style="width:auto;min-width:200px"><option value="">— Chọn mẫu —</option></select><span class="tiny">Điền xong vẫn sửa được, bấm Lưu để tạo.</span></div>`}
     <div class="grid2">
       ${f("id", "Mã dự án (chữ thường, không dấu, vd: gif-wifi)", id ? "disabled" : 'pattern="[a-z0-9-]+"')}
       ${f("name", "Tên dự án")}
@@ -378,6 +380,24 @@ function editProject(id) {
   </div>`;
   $("pEdit").scrollIntoView({ behavior: "smooth" });
   $("eClose").onclick = () => { editId = null; $("pEdit").innerHTML = ""; };
+  // Mau dien san (huong-dan/mau.json + huong-dan/<id>/gioi-thieu.json): Claude soan san gioi thieu cho du an moi
+  let preset = null;
+  if (!id) {
+    fetch("huong-dan/mau.json?t=" + Date.now()).then((r) => r.ok ? r.json() : []).then((list) => {
+      $("ePreset").innerHTML += list.filter((x) => !D.projects.some((p0) => p0.id === x.id))
+        .map((x) => `<option value="${esc(x.id)}">${esc(x.name)}</option>`).join("");
+    }).catch(() => {});
+    $("ePreset").onchange = async () => {
+      const pid = $("ePreset").value; if (!pid) return;
+      try { preset = await (await fetch(`huong-dan/${pid}/gioi-thieu.json?t=${Date.now()}`)).json(); } catch { return toast("Không đọc được mẫu"); }
+      ["id", "name", "emoji", "desc", "board"].forEach((k) => { if (preset[k] != null) $("e_" + k).value = preset[k]; });
+      if (preset.chip) $("e_chip").value = preset.chip;
+      $("e_longDesc").value = preset.longDesc || ""; $("e_note").value = preset.note || "";
+      $("e_minFlash").value = preset.minFlash ?? 0; $("e_minPsram").value = preset.minPsram ?? 0;
+      $("e_visible").checked = preset.visible !== false; $("e_freeOn").checked = preset.freeOn !== false; $("e_proOn").checked = !!preset.proOn;
+      toast("Đã điền sẵn, kiểm tra rồi bấm Lưu");
+    };
+  }
   $("eSave").onclick = async () => {
     const pid = id || $("e_id").value.trim().toLowerCase();
     if (!/^[a-z0-9-]{2,40}$/.test(pid)) return toast("Mã dự án chỉ gồm chữ thường, số, dấu gạch");
@@ -386,6 +406,7 @@ function editProject(id) {
       minFlash: Math.max(0, +$("e_minFlash").value || 0), minPsram: Math.max(0, +$("e_minPsram").value || 0), chip: $("e_chip").value, order: +$("e_order").value || 99, longDesc: $("e_longDesc").value, note: $("e_note").value };
     ["name", "emoji", "cover", "desc", "board"].forEach((k) => data[k] = $("e_" + k).value.trim());
     if (!data.name) return toast("Nhập tên dự án");
+    if (!id && preset && preset.id === pid) { if (preset.free) data.free = preset.free; if (preset.pro) data.pro = preset.pro; }
     await setDoc(doc(db, "projects", pid), data, { merge: true });
     await loadAll(); editId = pid; projects(); toast("Đã lưu dự án");
   };
