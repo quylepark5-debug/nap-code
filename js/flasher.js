@@ -15,6 +15,7 @@ let siteCfg = {};
 let projects = [], cur = null, codeInfo = null, busy = false, uid = null;
 let limitCfg = null, credit = false, cdTimer = 0;   // gioi han nap ban thuong; credit = da tru 1 luot nhung chua nap xong (Thu lai khong tru them)
 const fwCache = {};                              // firmware da tai trong lan mo trang nay -> nap mach khac khong tai lai
+let ownerMode = false;   // chu trang thu nap: Pro khong can ma, khong tru luot
 let unlocked = null; // ma da kich hoat trong lan mo trang nay -> "Thu lai" khong tinh them luot
 
 const md5u8 = (u8) => SparkMD5.ArrayBuffer.hash(u8.buffer.slice(u8.byteOffset, u8.byteOffset + u8.byteLength));
@@ -28,6 +29,7 @@ if (!("serial" in navigator)) $("noSerial").classList.remove("hide");
   try {
     if (!(await authReady())) await signInAnonymously(auth);
     uid = auth.currentUser.uid;
+    ownerMode = !auth.currentUser.isAnonymous;     // chu trang dang dang nhap (trang quan ly) tren trinh duyet nay
   } catch (e) { console.warn("auth", e); }
   logVisit();
   loadContact();
@@ -156,8 +158,8 @@ function renderPacks(list) {
   if (!ps.length) return;
   box.innerHTML = ps.map((x) => `<div class="pack ${x.hot ? "hot" : ""}">${x.hot ? '<span class="tag">Nhiều người chọn</span>' : ""}
     <div class="nm">${esc(x.name)}</div><div class="pr">${esc(x.price || "Liên hệ")}</div>
-    <div class="us"><b>${x.uses}</b> lần nạp</div>${x.note ? `<div class="nt">${esc(x.note)}</div>` : ""}</div>`).join("");
-  $("usesNote").innerHTML = "📌 Mỗi mã có số lần nạp theo gói. Nạp lỗi rồi bấm <b>Thử lại</b> ngay trên trang thì không tính thêm.";
+    <div class="us"><b>${x.uses}</b> mạch</div>${x.note ? `<div class="nt">${esc(x.note)}</div>` : ""}</div>`).join("");
+  $("usesNote").innerHTML = "📌 Mỗi mã nạp được số mạch theo gói. <b>Nạp lại cho mạch đã nạp</b> bằng mã đó thì không tính thêm.";
 }
 
 function renderContact(c) {
@@ -204,7 +206,8 @@ async function loadProjects() {
 const freeOn = (p) => p.freeOn !== false && !!p.free?.parts?.length;   // chu trang bat/tat tung ban trong trang quan ly
 const proOn = (p) => p.proOn !== false && !!p.pro?.parts?.length;
 const proFree = (p) => p?.proFree === true;                             // chu trang tat ma: ai cung nap duoc ban Pro
-const limited = (t) => t === "free" || (t === "pro" && proFree(cur));   // ban bi gioi han luot nap theo gio (dung chung 1 bo dem)
+const noCode = () => proFree(cur) || ownerMode;                       // ban Pro khong can nhap ma
+const limited = (t) => !ownerMode && (t === "free" || (t === "pro" && proFree(cur)));   // ban bi gioi han luot nap theo gio (dung chung 1 bo dem)
 let hasOpts = false, chipInfo = null, savedPort = null, goText = "";
 
 function pick(id, scroll) {
@@ -263,9 +266,10 @@ function setTier(t) {
   document.querySelector(`input[name=tier][value=${t}]`).checked = true;
   $("tFree").classList.toggle("on", t === "free");
   $("tPro").classList.toggle("on", t === "pro");
-  $("proBox").classList.toggle("hide", t !== "pro" || proFree(cur));
-  $("proFreeNote").classList.toggle("hide", t !== "pro" || !proFree(cur));
-  if (t === "pro" && !codeInfo && !proFree(cur)) { lockPro(); return; }   // Pro: phai co ma hop le moi hien thong so
+  $("proBox").classList.toggle("hide", t !== "pro" || noCode());
+  $("proFreeNote").classList.toggle("hide", t !== "pro" || !noCode());
+  if (t === "pro" && ownerMode) $("proFreeNote").innerHTML = "👑 Bạn đang đăng nhập <b>chủ trang</b>: nạp Pro không cần mã, không tính lượt.";
+  if (t === "pro" && !codeInfo && !noCode()) { lockPro(); return; }   // Pro: phai co ma hop le moi hien thong so
   showTier(t);
 }
 // Hien huong dan, so do chan, tuy chinh va mo nut nap cho ban t
@@ -370,10 +374,9 @@ async function checkCode(c) {
     if (!d.active) return codeMsg("Mã này đã bị khoá.", "bad");
     if (d.project !== "*" && d.project !== cur.id) return codeMsg("Mã này dành cho dự án khác.", "bad");
     const max = d.maxUses || MAX_USES, left = max - (d.uses || 0);
-    if (left <= 0 && !(unlocked && unlocked.code === c && unlocked.project === cur.id))
-      return codeMsg(`Mã đã dùng hết ${max}/${max} lần nạp. Liên hệ để được cấp mã mới.`, "bad");
     codeInfo = { code: c, ...d };
-    codeMsg(`✓ Mã hợp lệ · còn ${left}/${max} lần nạp`, "ok");
+    if (left <= 0) codeMsg(`Mã đã nạp đủ ${max}/${max} mạch. Vẫn nạp lại được cho các mạch đã nạp bằng mã này; mạch mới cần mã mới.`, "warn");
+    else codeMsg(`✓ Mã hợp lệ · còn ${left}/${max} mạch (nạp lại mạch cũ không tính thêm)`, "ok");
     $("proGet").classList.add("hide"); $("packs").classList.add("hide");
     if (tier() === "pro") showTier("pro");
   } catch (e) { codeMsg("Không kiểm tra được mã, thử lại.", "bad"); }
@@ -411,7 +414,7 @@ $("go").onclick = async () => {
   if (busy || !cur || !tier()) return;
   if (!("serial" in navigator)) return alert("Hãy dùng Chrome hoặc Edge trên máy tính.");
   const t = tier();
-  if (t === "pro" && !codeInfo && !proFree(cur)) { codeMsg("Nhập mã Pro hợp lệ trước khi nạp.", "bad"); $("code").focus(); return; }
+  if (t === "pro" && !codeInfo && !noCode()) { codeMsg("Nhập mã Pro hợp lệ trước khi nạp.", "bad"); $("code").focus(); return; }
   const useOpt = !$("optBox").classList.contains("hide");
   const optErr = useOpt ? checkOptions($("optForm")) : "";
   $("optMsg").textContent = optErr; $("optMsg").classList.toggle("hide", !optErr);
@@ -450,18 +453,22 @@ $("go").onclick = async () => {
     if (!fit.ok) throw new Fail(fit.problems.join(" "), "kiểm tra mạch");
     log(`Mạch: ${rec.chip} · MAC ${rec.mac}`);
 
-    if (t === "pro" && !proFree(cur) && !(unlocked && unlocked.code === codeInfo.code && unlocked.project === cur.id)) {
+    if (t === "pro" && !noCode() && !(unlocked && unlocked.code === codeInfo.code && unlocked.project === cur.id)) {
       rec.stage = "kích hoạt";
       prog(0.02, "Đang kích hoạt mã Pro…");
+      const max = codeInfo.maxUses || MAX_USES;
+      const again = (codeInfo.macs || []).includes(rec.mac);       // mach nay da nap bang ma nay -> khong tru luot
+      if (!again && (codeInfo.uses || 0) >= max)
+        throw new Fail(`Mã đã nạp đủ ${max} mạch, mạch này là mạch mới. Liên hệ để được cấp mã mới.`, "kích hoạt");
       try {
-        await updateDoc(doc(db, "codes", codeInfo.code), {
-          uid, lastMac: rec.mac, macs: arrayUnion(rec.mac), usedAt: serverTimestamp(), uses: increment(1) });
+        const upd = again ? { uid, lastMac: rec.mac, usedAt: serverTimestamp() }
+          : { uid, lastMac: rec.mac, macs: arrayUnion(rec.mac), usedAt: serverTimestamp(), uses: increment(1) };
+        await updateDoc(doc(db, "codes", codeInfo.code), upd);
         await setDoc(doc(db, "unlocks", uid), { code: codeInfo.code, project: cur.id, at: serverTimestamp() });
       } catch (e) { throw new Fail("Kích hoạt mã không thành công (mã sai, bị khoá hoặc đã hết lượt).", "kích hoạt"); }
       unlocked = { code: codeInfo.code, project: cur.id };
-      const max = codeInfo.maxUses || MAX_USES;
-      codeInfo.uses = (codeInfo.uses || 0) + 1;
-      log(`Đã dùng mã: ${codeInfo.uses}/${max} lần`);
+      if (!again) { codeInfo.uses = (codeInfo.uses || 0) + 1; codeInfo.macs = [...(codeInfo.macs || []), rec.mac]; }
+      log(again ? "Mạch này đã nạp bằng mã này trước đó: không tính thêm lượt" : `Đã dùng mã: ${codeInfo.uses}/${max} mạch`);
     }
 
     if (limited(t) && limOn() && !credit) {
@@ -492,7 +499,7 @@ $("go").onclick = async () => {
     $("run").classList.add("hide");
     $("done").innerHTML = `<div class="ic">🎉</div><h3>Nạp thành công!</h3>
       <p class="muted small">Mạch đang khởi động lại. Nếu màn hình chưa sáng, nhấn nút <b>RST</b> một lần.</p>
-      ${t === "pro" && codeInfo ? `<p class="pill pro">Mã Pro còn ${Math.max(0, (codeInfo.maxUses || MAX_USES) - codeInfo.uses)}/${codeInfo.maxUses || MAX_USES} lần nạp</p><br><br>` : ""}
+      ${t === "pro" && codeInfo ? `<p class="pill pro">Mã Pro còn ${Math.max(0, (codeInfo.maxUses || MAX_USES) - (codeInfo.uses || 0))}/${codeInfo.maxUses || MAX_USES} mạch</p><br><br>` : ""}
       <button class="btn pri" id="again">🔁 Nạp mạch khác</button>${t === "free" || proFree(cur) ? donateMini() : ""}`;
     $("done").classList.remove("hide");
     credit = false;

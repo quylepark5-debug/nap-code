@@ -193,7 +193,7 @@ function newCode() {
   return normCode([...r].map((x) => ALPHA[x % 32]).join(""));
 }
 function shareText(c) {
-  return `Mã Pro của bạn: ${c.id}\nDự án: ${pName(c.project)}\nDùng được ${c.maxUses || MAX_USES} lần nạp.\nNạp tại: ${siteUrl()}${c.project !== "*" ? "#" + c.project : ""}`;
+  return `Mã Pro của bạn: ${c.id}\nDự án: ${pName(c.project)}\nNạp được cho ${c.maxUses || MAX_USES} mạch (nạp lại mạch đã nạp không tính thêm).\nNạp tại: ${siteUrl()}${c.project !== "*" ? "#" + c.project : ""}`;
 }
 function codes() {
   const opts = D.projects.map((p) => `<option value="${esc(p.id)}">${esc(p.name)}</option>`).join("");
@@ -203,7 +203,7 @@ function codes() {
         <label class="field"><span>Dự án</span><select id="cProj">${opts}<option value="*">Tất cả dự án</option></select></label>
         <label class="field"><span>Ghi chú (tên khách, Zalo…)</span><input type="text" id="cNote" maxlength="120"></label>
         ${(D.config.packs || []).length ? `<label class="field"><span>Gói (tự điền số lần nạp)</span><select id="cPack"><option value="">— Chọn gói —</option>${D.config.packs.map((x, i) => `<option value="${i}">${esc(x.name)} · ${x.uses} lần · ${esc(x.price || "")}</option>`).join("")}</select></label>` : ""}
-        <label class="field"><span>Số lần nạp mỗi mã</span><input type="number" id="cMax" value="${MAX_USES}" min="1" max="50"></label>
+        <label class="field"><span>Số mạch mỗi mã nạp được</span><input type="number" id="cMax" value="${MAX_USES}" min="1" max="50"></label>
         <label class="field"><span>Số mã cần tạo</span><input type="number" id="cN" value="1" min="1" max="20"></label>
       </div>
       <button class="btn pri" id="cMake">＋ Tạo mã</button>
@@ -216,7 +216,7 @@ function codes() {
       return `<tr><td class="mono">${esc(c.id)}</td><td>${esc(pName(c.project))}</td><td class="small">${esc(c.note)}</td>
         <td><b>${u}</b>/${max}</td><td class="mono tiny">${esc((c.macs || []).join(" "))}</td><td>${fmtTime(c.usedAt)}</td><td>${st}</td>
         <td style="white-space:nowrap"><button class="btn sm" data-copy="${esc(c.id)}" title="Chép tin nhắn gửi khách">📋</button>
-          <button class="btn sm" data-add="${esc(c.id)}" title="Thêm 5 lượt">+5</button>
+          <button class="btn sm" data-add="${esc(c.id)}" title="Thêm 5 mạch">+5</button>
           <button class="btn sm" data-lock="${esc(c.id)}">${c.active ? "Khoá" : "Mở"}</button>
           <button class="btn sm danger" data-del="${esc(c.id)}">Xoá</button></td></tr>`;
     }).join("") || '<tr><td colspan="8" class="tiny">Chưa có mã</td></tr>'}</table></div>`;
